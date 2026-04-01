@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68.0", "setuptools-scm>=8.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "topo2laser"
@@ -15,6 +15,8 @@ dependencies = [
     "click>=8.0",
     "requests>=2.31",
     "pyproj>=3.6",
+    "xarray>=2024.0",
+    "netcdf4>=1.6",
 ]
 
 [project.optional-dependencies]
@@ -31,6 +33,7 @@ dev = [
     "pytest>=8.0",
     "black>=24.0",
     "ruff>=0.3",
+    "mypy>=1.8",
     "matplotlib>=3.8",
 ]
 
@@ -47,6 +50,10 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
