@@ -8,6 +8,13 @@ import rasterio
 from rasterio.crs import CRS
 from rasterio.transform import from_bounds
 
+try:
+    import py3dep
+
+    HAS_PY3DEP = True
+except ImportError:
+    HAS_PY3DEP = False
+
 logger = logging.getLogger(__name__)
 
 ETOPO_CATALOG_URL = (
@@ -169,3 +176,47 @@ def _write_geotiff(
     ) as dst:
         dst.write(data, 1)
         dst.update_tags(description=description)
+
+
+def fetch_3dep(
+    south: float,
+    west: float,
+    north: float,
+    east: float,
+    cache_dir: Path,
+    resolution: int = 10,
+) -> Path | None:
+    """Fetch USGS 3DEP elevation data for a bounding box.
+
+    Uses py3dep to fetch DEM at the specified resolution (meters).
+    Returns path to GeoTIFF, or None if py3dep is not installed or
+    the area is outside 3DEP coverage.
+
+    Args:
+        resolution: DEM resolution in meters. 10 (default) or 30.
+    """
+    if not HAS_PY3DEP:
+        logger.info("py3dep not installed — skipping 3DEP fetch")
+        return None
+
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    output_path = cache_dir / f"3dep_{resolution}m.tif"
+
+    if output_path.exists():
+        logger.info("Using cached 3DEP data: %s", output_path)
+        return output_path
+
+    logger.info("Fetching 3DEP %dm data...", resolution)
+    try:
+        dem = py3dep.get_dem((west, south, east, north), resolution=resolution)
+        dem.rio.to_raster(str(output_path))
+        logger.info(
+            "3DEP data saved to %s (%d x %d pixels)",
+            output_path,
+            dem.shape[1],
+            dem.shape[0],
+        )
+        return output_path
+    except Exception as e:
+        logger.warning("3DEP fetch failed (area may be outside US): %s", e)
+        return None
