@@ -93,6 +93,17 @@ def _parse_mm(value: str | None) -> float | None:
     type=int,
     help="Max layers for ocean depth (rest go to land). 0 = uniform.",
 )
+@click.option(
+    "--render/--no-render",
+    default=False,
+    help="Generate a 3D preview PNG of the stacked layers.",
+)
+@click.option(
+    "--render-interactive",
+    is_flag=True,
+    default=False,
+    help="Open an interactive 3D preview window (implies --render).",
+)
 @click.option("-v", "--verbose", is_flag=True, help="Show detailed logging.")
 def main(
     bbox,
@@ -111,6 +122,8 @@ def main(
     min_polygon,
     max_water_layers,
     high_res,
+    render,
+    render_interactive,
     verbose,
 ):
     """Convert geographic elevation data to laser-cuttable SVG layers."""
@@ -141,6 +154,8 @@ def main(
         frame_border_mm=_parse_mm(frame_border) or 15.0,
         smooth_iterations=smooth_iterations,
         simplify_tolerance_mm=_parse_mm(simplify_tolerance) or 0.5,
+        render=render or render_interactive,
+        render_interactive=render_interactive,
     )
 
     result = run(config)
