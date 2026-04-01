@@ -1,8 +1,13 @@
 ---
 title: "Auto-Detect Data Source by Region"
-status: Captured
+status: Considering
 created: 2026-03-31
 source: vision
+ice_scores:
+  impact: 7
+  confidence: 8
+  ease: 7
+  total: 392
 ---
 
 # IDEA-007: Auto-Detect Data Source by Region

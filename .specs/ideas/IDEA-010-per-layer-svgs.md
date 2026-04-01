@@ -1,8 +1,9 @@
 ---
 title: "Per-Layer SVG Output in Addition to Combined"
-status: Captured
+status: Declined
 created: 2026-03-31
 source: user
+declined_reason: "Already implemented — write_per_layer_svgs() in svg/writer.py"
 ---
 
 # IDEA-010: Per-Layer SVG Output

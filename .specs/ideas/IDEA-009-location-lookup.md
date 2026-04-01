@@ -1,8 +1,14 @@
 ---
 title: "Location Name to Bounding Box Lookup"
-status: Captured
+status: Promoted
 created: 2026-03-31
 source: user
+promoted_to: FEAT-010
+ice_scores:
+  impact: 9
+  confidence: 9
+  ease: 8
+  total: 648
 ---
 
 # IDEA-009: Location Name to Bounding Box Lookup
@@ -24,3 +30,8 @@ topo2laser --location "Duluth, MN" --radius 15km -o output/duluth
   (city boundary vs. surrounding area, island vs. island + ocean shelf)
 - Would need a `--radius` or `--padding` option to expand the bbox
 - Rate limiting on free geocoding services
+
+## Prioritization Notes (2026-04-01)
+
+Promoted to FEAT-010. Highest ICE score (648) — biggest UX friction point
+in the current workflow is manually looking up bounding boxes.
