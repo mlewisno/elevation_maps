@@ -30,6 +30,7 @@ class PipelineConfig:
     height_mm: float | None = None
     kerf_mm: float = 0.2
     include_bathymetry: bool = True
+    high_res_land: bool = False
     include_frame: bool = True
     frame_border_mm: float = 15.0
     smooth_iterations: int = 3
@@ -49,6 +50,7 @@ def run(config: PipelineConfig) -> Path:
     raster_path = fetch_elevation(
         config.bbox,
         include_bathymetry=config.include_bathymetry,
+        high_res_land=config.high_res_land,
     )
 
     # Read elevation range from raster

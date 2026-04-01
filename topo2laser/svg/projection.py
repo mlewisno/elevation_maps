@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 import geopandas as gpd
 import pyproj
+from shapely.geometry import box
+from shapely.validation import make_valid
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +77,13 @@ def project_and_scale(
     # Scale geometries: multiply coordinates by scale factor (m → mm)
     scaled = projected.copy()
     scaled["geometry"] = scaled["geometry"].affine_transform([scale, 0, 0, scale, 0, 0])
+
+    # Clip all polygons to the content rectangle to remove projection
+    # artifacts (LAEA warps lat/lon grid into curves at bbox edges)
+    new_bounds = scaled.total_bounds
+    clip_rect = box(new_bounds[0], new_bounds[1], new_bounds[2], new_bounds[3])
+    scaled["geometry"] = scaled["geometry"].intersection(clip_rect)
+    scaled["geometry"] = scaled["geometry"].apply(make_valid)
 
     # Translate to origin (min corner at 0,0)
     new_bounds = scaled.total_bounds

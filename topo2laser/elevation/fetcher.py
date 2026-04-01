@@ -51,6 +51,7 @@ class BoundingBox:
 def fetch_elevation(
     bbox: BoundingBox,
     include_bathymetry: bool = True,
+    high_res_land: bool = False,
     cache_dir: Path = DEFAULT_CACHE_DIR,
 ) -> Path:
     """Fetch elevation data for a bounding box.
@@ -58,22 +59,15 @@ def fetch_elevation(
     Returns the path to a GeoTIFF with elevation values (positive = land,
     negative = ocean depth, zero = sea level).
 
-    Strategy:
-    1. Fetch ETOPO 2022 (combined land + ocean, ~450m resolution)
-    2. Try fetching 3DEP (US only, 10m resolution) for land
-    3. If 3DEP available, merge: 3DEP for land, ETOPO for ocean
-    4. Otherwise, use ETOPO alone
+    Args:
+        include_bathymetry: Include ocean depth data (negative values).
+        high_res_land: Merge USGS 3DEP 10m land data over ETOPO.
+            Slower first run but much sharper land contours.
     """
     bbox_slug = (
         f"{bbox.south:.2f}_{bbox.west:.2f}_{bbox.north:.2f}_{bbox.east:.2f}"
     ).replace("-", "m")
     run_cache = cache_dir / bbox_slug
-
-    # Check for cached merged result first
-    merged_path = run_cache / "merged.tif"
-    if merged_path.exists():
-        logger.info("Using cached merged elevation: %s", merged_path)
-        return merged_path
 
     logger.info(
         "Fetching elevation for bbox: %.4f,%.4f,%.4f,%.4f",
@@ -83,23 +77,27 @@ def fetch_elevation(
         bbox.east,
     )
 
-    # Always fetch ETOPO for ocean bathymetry
+    # Always fetch ETOPO (combined land + ocean)
     etopo_path = fetch_etopo(
         bbox.south, bbox.west, bbox.north, bbox.east, cache_dir=run_cache
     )
 
-    if not include_bathymetry:
+    if not high_res_land:
         return etopo_path
 
-    # Try 3DEP for higher-resolution land data
+    # High-res mode: merge 3DEP land over ETOPO ocean
+    merged_path = run_cache / "merged.tif"
+    if merged_path.exists():
+        logger.info("Using cached merged elevation: %s", merged_path)
+        return merged_path
+
     dep3_path = fetch_3dep(
         bbox.south, bbox.west, bbox.north, bbox.east, cache_dir=run_cache
     )
 
     if dep3_path is None:
-        logger.info("No 3DEP data — using ETOPO only")
+        logger.info("No 3DEP data available — using ETOPO only")
         return etopo_path
 
-    # Merge: 3DEP for land, ETOPO for ocean
     logger.info("Merging 3DEP land + ETOPO ocean...")
     return merge_land_and_ocean(etopo_path, dep3_path, merged_path)

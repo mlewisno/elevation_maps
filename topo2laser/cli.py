@@ -57,6 +57,11 @@ def _parse_mm(value: str | None) -> float | None:
     help="Include ocean depth data.",
 )
 @click.option(
+    "--high-res/--no-high-res",
+    default=False,
+    help="Use 3DEP 10m land data (US only, slower first run).",
+)
+@click.option(
     "--frame/--no-frame",
     default=True,
     help="Generate rectangular frame piece.",
@@ -105,6 +110,7 @@ def main(
     simplify_tolerance,
     min_polygon,
     max_water_layers,
+    high_res,
     verbose,
 ):
     """Convert geographic elevation data to laser-cuttable SVG layers."""
@@ -128,6 +134,7 @@ def main(
         height_mm=_parse_mm(height),
         kerf_mm=_parse_mm(kerf) or 0.2,
         include_bathymetry=bathymetry,
+        high_res_land=high_res,
         min_polygon_mm=_parse_mm(min_polygon) or 5.0,
         max_water_layers=max_water_layers,
         include_frame=frame,
