@@ -5,24 +5,31 @@ import numpy as np
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.validation import make_valid
 
+DEFAULT_MIN_POLYGON_MM = 5.0
+
 
 def simplify_contours(
     gdf: gpd.GeoDataFrame,
     tolerance: float = 0.5,
     smooth_iterations: int = 3,
+    min_polygon_mm: float = DEFAULT_MIN_POLYGON_MM,
 ) -> gpd.GeoDataFrame:
     """Simplify and smooth contour polygons for cleaner laser cuts.
 
     First applies Chaikin corner-cutting to smooth staircase edges from
-    raster vectorization, then Douglas-Peucker to reduce vertex count.
+    raster vectorization, then Douglas-Peucker to reduce vertex count,
+    then filters out polygons too small to laser cut.
 
     Args:
         gdf: GeoDataFrame with contour polygons (in mm coordinates).
         tolerance: Douglas-Peucker tolerance in mm after smoothing.
         smooth_iterations: Number of Chaikin smoothing passes.
+        min_polygon_mm: Minimum bounding box dimension in mm. Polygons
+            smaller than this in both width and height are dropped.
+            Set to 0 to keep all polygons.
 
     Returns:
-        GeoDataFrame with smoothed geometries.
+        GeoDataFrame with smoothed and filtered geometries.
     """
     result = gdf.copy()
     result["geometry"] = result["geometry"].apply(
@@ -33,7 +40,36 @@ def simplify_contours(
             tolerance, preserve_topology=True
         )
     result["geometry"] = result["geometry"].apply(make_valid)
+    if min_polygon_mm > 0:
+        result["geometry"] = result["geometry"].apply(
+            lambda geom: _filter_small_polygons(geom, min_polygon_mm)
+        )
+        result = result[~result["geometry"].is_empty].reset_index(drop=True)
     return result
+
+
+def _filter_small_polygons(
+    geom: Polygon | MultiPolygon, min_dim_mm: float
+) -> Polygon | MultiPolygon:
+    """Remove polygons whose bounding box is smaller than min_dim_mm."""
+    if isinstance(geom, MultiPolygon):
+        kept = [p for p in geom.geoms if _polygon_large_enough(p, min_dim_mm)]
+        if not kept:
+            return Polygon()
+        if len(kept) == 1:
+            return kept[0]
+        return MultiPolygon(kept)
+    if _polygon_large_enough(geom, min_dim_mm):
+        return geom
+    return Polygon()
+
+
+def _polygon_large_enough(polygon: Polygon, min_dim_mm: float) -> bool:
+    """Check if polygon bbox exceeds min_dim_mm in at least one dimension."""
+    minx, miny, maxx, maxy = polygon.bounds
+    width = maxx - minx
+    height = maxy - miny
+    return width >= min_dim_mm or height >= min_dim_mm
 
 
 def _smooth_geometry(

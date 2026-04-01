@@ -34,6 +34,7 @@ class PipelineConfig:
     frame_border_mm: float = 15.0
     smooth_iterations: int = 3
     simplify_tolerance_mm: float = 0.5
+    min_polygon_mm: float = 5.0
 
     def __post_init__(self):
         if self.total_height_mm is None and self.layer_count is None:
@@ -86,12 +87,13 @@ def run(config: PipelineConfig) -> Path:
         target_height_mm=config.height_mm,
     )
 
-    # Stage 3b: Smooth and simplify
-    logger.info("Stage 3b: Smoothing contours...")
+    # Stage 3b: Smooth, simplify, and filter small polygons
+    logger.info("Stage 3b: Smoothing and filtering contours...")
     gdf = simplify_contours(
         gdf,
         tolerance=config.simplify_tolerance_mm,
         smooth_iterations=config.smooth_iterations,
+        min_polygon_mm=config.min_polygon_mm,
     )
 
     # Stage 3c: Generate alignment outlines

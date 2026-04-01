@@ -77,6 +77,11 @@ def _parse_mm(value: str | None) -> float | None:
     default="0.5mm",
     help="Douglas-Peucker simplification tolerance in mm.",
 )
+@click.option(
+    "--min-polygon",
+    default="5mm",
+    help="Drop polygons smaller than this in mm (0 to keep all).",
+)
 @click.option("-v", "--verbose", is_flag=True, help="Show detailed logging.")
 def main(
     bbox,
@@ -92,6 +97,7 @@ def main(
     frame_border,
     smooth_iterations,
     simplify_tolerance,
+    min_polygon,
     verbose,
 ):
     """Convert geographic elevation data to laser-cuttable SVG layers."""
@@ -115,6 +121,7 @@ def main(
         height_mm=_parse_mm(height),
         kerf_mm=_parse_mm(kerf) or 0.2,
         include_bathymetry=bathymetry,
+        min_polygon_mm=_parse_mm(min_polygon) or 5.0,
         include_frame=frame,
         frame_border_mm=_parse_mm(frame_border) or 15.0,
         smooth_iterations=smooth_iterations,
