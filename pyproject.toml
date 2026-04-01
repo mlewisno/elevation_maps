@@ -26,6 +26,9 @@ us = [
 landmarks = [
     "osmnx>=1.9",
 ]
+render = [
+    "matplotlib>=3.8",
+]
 smooth = [
     "svgpathtools>=1.6",
 ]
