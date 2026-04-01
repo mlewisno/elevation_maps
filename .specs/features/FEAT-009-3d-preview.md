@@ -20,8 +20,8 @@ relief will appear when assembled.
 
 ### Functional
 
-**Preview Generation**
-- Accept `--preview` CLI flag to generate a 3D preview after processing
+**Render Output**
+- Accept `--render` CLI flag to generate a 3D render after processing
 - Render contour polygons as stacked layers at their physical heights
 - Show the stepped/terraced appearance that matches the real laser-cut result
 - Output as a static image (PNG) saved alongside the SVG output
@@ -33,7 +33,7 @@ relief will appear when assembled.
 - Camera angle should show depth — isometric or slight perspective
 
 **Interactivity (stretch)**
-- Optionally open an interactive matplotlib window (`--preview-interactive`)
+- Optionally open an interactive matplotlib window (`--render-interactive`)
 - Allow rotation/zoom to inspect the result from different angles
 
 ### Non-Functional
@@ -54,8 +54,8 @@ relief will appear when assembled.
 
 - `topo2laser/preview/render.py` — 3D rendering logic
 - `topo2laser/preview/__init__.py` — Module init
-- `topo2laser/cli.py` — Add `--preview` and `--preview-interactive` flags
-- `topo2laser/pipeline.py` — Wire preview stage after SVG generation
+- `topo2laser/cli.py` — Add `--render` and `--render-interactive` flags
+- `topo2laser/pipeline.py` — Wire render stage after SVG generation
 - `tests/test_preview.py` — Unit tests
 
 ## Open Questions
@@ -67,9 +67,9 @@ relief will appear when assembled.
 
 ## Acceptance Criteria
 
-- [ ] `--preview` flag generates a PNG showing the 3D stacked layers
+- [ ] `--render` flag generates a PNG showing the 3D stacked layers
 - [ ] Layers are visually distinguishable by elevation
 - [ ] Water and land layers have distinct coloring
-- [ ] Preview file saved alongside SVG output (e.g., `output/preview.png`)
-- [ ] `--preview-interactive` opens a rotatable 3D view
-- [ ] Preview accurately represents the physical layer stacking
+- [ ] Render file saved alongside SVG output (e.g., `output/render.png`)
+- [ ] `--render-interactive` opens a rotatable 3D view
+- [ ] Render accurately represents the physical layer stacking

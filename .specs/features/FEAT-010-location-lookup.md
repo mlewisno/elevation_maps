@@ -55,6 +55,20 @@ optional radius/padding control.
 - `topo2laser/pipeline.py` — Resolve location before elevation fetch
 - `tests/test_geocode.py` — Unit tests
 
+## Open Questions
+
+- **Interaction model**: Simple geocoding may not give the user enough control
+  over bounds. The real workflow involves deciding canvas ratio, how much
+  surrounding area to include, and how the feature sits in the frame. Options:
+  1. Multi-step interactive CLI — geocode, show bbox on a map preview, let
+     user adjust before committing to the full pipeline
+  2. Research existing tools with visual/drag-and-drop area selection that
+     could output coordinates for our pipeline
+  3. Keep simple geocoding as a starting point, but lean on `--render` from
+     FEAT-009 for quick iteration (geocode → render → adjust padding → repeat)
+- Should we research what tools already exist for visual bbox selection before
+  building our own?
+
 ## Acceptance Criteria
 
 - [ ] `--location "Kaua'i"` resolves to a valid bounding box
