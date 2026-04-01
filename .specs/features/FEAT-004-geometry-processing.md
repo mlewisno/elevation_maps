@@ -1,6 +1,6 @@
 ---
 title: "Geometry Processing (Simplify, Scale, Align)"
-status: Draft
+status: Complete
 created: 2026-03-31
 epic: core-pipeline
 vision: FEAT-001

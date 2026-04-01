@@ -1,6 +1,6 @@
 ---
 title: "Elevation + Bathymetry Data Fetching"
-status: Draft
+status: Complete
 created: 2026-03-31
 epic: core-pipeline
 vision: FEAT-001
