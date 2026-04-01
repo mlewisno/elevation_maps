@@ -82,6 +82,12 @@ def _parse_mm(value: str | None) -> float | None:
     default="5mm",
     help="Drop polygons smaller than this in mm (0 to keep all).",
 )
+@click.option(
+    "--max-water-layers",
+    default=4,
+    type=int,
+    help="Max layers for ocean depth (rest go to land). 0 = uniform.",
+)
 @click.option("-v", "--verbose", is_flag=True, help="Show detailed logging.")
 def main(
     bbox,
@@ -98,6 +104,7 @@ def main(
     smooth_iterations,
     simplify_tolerance,
     min_polygon,
+    max_water_layers,
     verbose,
 ):
     """Convert geographic elevation data to laser-cuttable SVG layers."""
@@ -122,6 +129,7 @@ def main(
         kerf_mm=_parse_mm(kerf) or 0.2,
         include_bathymetry=bathymetry,
         min_polygon_mm=_parse_mm(min_polygon) or 5.0,
+        max_water_layers=max_water_layers,
         include_frame=frame,
         frame_border_mm=_parse_mm(frame_border) or 15.0,
         smooth_iterations=smooth_iterations,

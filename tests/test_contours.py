@@ -32,7 +32,6 @@ class TestCalculateLayers:
         )
         assert config.layer_count == 10
         assert config.total_height_mm == 30.0
-        assert config.elevation_interval == 250.0
 
     def test_from_total_height(self):
         config = calculate_layers(
@@ -42,7 +41,6 @@ class TestCalculateLayers:
             total_height_mm=36.0,
         )
         assert config.layer_count == 12
-        assert config.elevation_interval == pytest.approx(208.33, rel=0.01)
 
     def test_both_raises(self):
         with pytest.raises(ValueError, match="not both"):
@@ -83,7 +81,6 @@ class TestCalculateLayers:
         )
         info = config.layer_info(0)
         assert info["type"] == "water"
-        assert info["elevation_min"] == -500.0
 
     def test_layer_info_land(self):
         config = calculate_layers(
@@ -92,7 +89,7 @@ class TestCalculateLayers:
             material_thickness_mm=3.0,
             layer_count=4,
         )
-        info = config.layer_info(3)
+        info = config.layer_info(config.layer_count - 1)
         assert info["type"] == "land"
 
     def test_layer_info_mixed(self):
@@ -101,10 +98,34 @@ class TestCalculateLayers:
             elevation_max=600,
             material_thickness_mm=3.0,
             layer_count=3,
+            max_water_layers=0,  # disable capping for uniform test
         )
-        # Layer 0: -600 to -200 (water)
-        # Layer 1: -200 to 200 (mixed — crosses sea level)
-        # Layer 2: 200 to 600 (land)
         assert config.layer_info(0)["type"] == "water"
         assert config.layer_info(1)["type"] == "mixed"
         assert config.layer_info(2)["type"] == "land"
+
+    def test_max_water_layers_caps_water(self):
+        config = calculate_layers(
+            elevation_min=-3000,
+            elevation_max=1500,
+            material_thickness_mm=3.0,
+            layer_count=10,
+            max_water_layers=4,
+        )
+        bp = config.breakpoints()
+        # Sea level (0.0) should be a breakpoint
+        assert 0.0 in bp
+        # Count water layers (layers entirely below 0)
+        water_count = sum(
+            1
+            for i in range(config.layer_count)
+            if config.layer_info(i)["type"] == "water"
+        )
+        assert water_count == 4
+        # Remaining 6 layers should be land
+        land_count = sum(
+            1
+            for i in range(config.layer_count)
+            if config.layer_info(i)["type"] == "land"
+        )
+        assert land_count == 6

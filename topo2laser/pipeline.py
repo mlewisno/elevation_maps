@@ -35,6 +35,7 @@ class PipelineConfig:
     smooth_iterations: int = 3
     simplify_tolerance_mm: float = 0.5
     min_polygon_mm: float = 5.0
+    max_water_layers: int = 4
 
     def __post_init__(self):
         if self.total_height_mm is None and self.layer_count is None:
@@ -67,11 +68,11 @@ def run(config: PipelineConfig) -> Path:
         material_thickness_mm=config.material_thickness_mm,
         total_height_mm=config.total_height_mm,
         layer_count=config.layer_count,
+        max_water_layers=config.max_water_layers,
     )
     logger.info(
-        "Layer config: %d layers, %.0fm interval, %.1fmm total height",
+        "Layer config: %d layers, %.1fmm total height",
         layer_config.layer_count,
-        layer_config.elevation_interval,
         layer_config.total_height_mm,
     )
 

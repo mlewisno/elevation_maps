@@ -1,6 +1,6 @@
 """Calculate layer elevation breakpoints from physical parameters."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -11,7 +11,7 @@ class LayerConfig:
     layer_count: int
     elevation_min: float  # meters (negative for ocean)
     elevation_max: float  # meters
-    elevation_interval: float  # meters per layer
+    _breakpoints: list[float] = field(repr=False, default_factory=list)
 
     @property
     def total_height_mm(self) -> float:
@@ -23,14 +23,11 @@ class LayerConfig:
         Returns layer_count + 1 values defining layer boundaries.
         Layer 0 spans breakpoints[0] to breakpoints[1], etc.
         """
-        return [
-            self.elevation_min + i * self.elevation_interval
-            for i in range(self.layer_count + 1)
-        ]
+        return self._breakpoints
 
     def layer_info(self, layer_index: int) -> dict:
         """Return metadata for a given layer."""
-        bp = self.breakpoints()
+        bp = self._breakpoints
         low = bp[layer_index]
         high = bp[layer_index + 1]
         is_water = high <= 0
@@ -73,28 +70,83 @@ def calculate_layers(
     material_thickness_mm: float,
     total_height_mm: float | None = None,
     layer_count: int | None = None,
+    max_water_layers: int = 4,
 ) -> LayerConfig:
     """Calculate layer configuration from physical parameters.
 
     Provide either total_height_mm or layer_count (not both).
+
+    Water layers are capped at max_water_layers. Remaining layers are
+    allocated to land, giving land features higher vertical resolution.
+    Set max_water_layers to 0 to disable water layer capping.
     """
     if total_height_mm is not None and layer_count is not None:
         raise ValueError("Provide total_height_mm or layer_count, not both")
     if total_height_mm is None and layer_count is None:
         raise ValueError("Provide either total_height_mm or layer_count")
 
-    elevation_range = elevation_max - elevation_min
-
-    if layer_count is not None:
-        elevation_interval = elevation_range / layer_count
-    else:
+    if layer_count is None and total_height_mm is not None:
         layer_count = max(1, round(total_height_mm / material_thickness_mm))
-        elevation_interval = elevation_range / layer_count
+
+    assert layer_count is not None  # guaranteed by validation above
+
+    breakpoints = _compute_breakpoints(
+        elevation_min, elevation_max, layer_count, max_water_layers
+    )
 
     return LayerConfig(
         material_thickness_mm=material_thickness_mm,
         layer_count=layer_count,
         elevation_min=elevation_min,
         elevation_max=elevation_max,
-        elevation_interval=elevation_interval,
+        _breakpoints=breakpoints,
     )
+
+
+def _compute_breakpoints(
+    elevation_min: float,
+    elevation_max: float,
+    layer_count: int,
+    max_water_layers: int,
+) -> list[float]:
+    """Compute non-uniform breakpoints favoring land resolution.
+
+    If the data has both water (< 0) and land (>= 0) and the uniform
+    distribution would use more than max_water_layers for water, cap
+    water at max_water_layers and give the rest to land.
+    """
+    if elevation_min >= 0 or max_water_layers <= 0:
+        # No water or capping disabled — uniform intervals
+        interval = (elevation_max - elevation_min) / layer_count
+        return [elevation_min + i * interval for i in range(layer_count + 1)]
+
+    water_range = abs(elevation_min)
+    land_range = elevation_max
+    total_range = water_range + land_range
+
+    # How many layers would water get with uniform intervals?
+    uniform_water = round(layer_count * water_range / total_range)
+
+    if uniform_water <= max_water_layers:
+        # Uniform distribution doesn't exceed cap — use it
+        interval = total_range / layer_count
+        return [elevation_min + i * interval for i in range(layer_count + 1)]
+
+    # Cap water layers and give the rest to land
+    water_layers = max_water_layers
+    land_layers = layer_count - water_layers
+
+    water_interval = water_range / water_layers
+    land_interval = land_range / land_layers
+
+    breakpoints = []
+    # Water breakpoints (bottom to sea level)
+    for i in range(water_layers):
+        breakpoints.append(elevation_min + i * water_interval)
+    # Sea level boundary
+    breakpoints.append(0.0)
+    # Land breakpoints (sea level to peak)
+    for i in range(1, land_layers + 1):
+        breakpoints.append(i * land_interval)
+
+    return breakpoints
