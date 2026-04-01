@@ -1,8 +1,13 @@
 ---
 title: "Road/Street Grid Engraving"
-status: Captured
+status: Considering
 created: 2026-03-31
 source: reference-analysis
+ice_scores:
+  impact: 6
+  confidence: 5
+  ease: 3
+  total: 90
 ---
 
 # IDEA-002: Road/Street Grid Engraving

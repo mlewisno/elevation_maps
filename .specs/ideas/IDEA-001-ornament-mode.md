@@ -1,8 +1,13 @@
 ---
 title: "Christmas Ornament Output Mode"
-status: Captured
+status: Considering
 created: 2026-03-31
 source: user
+ice_scores:
+  impact: 7
+  confidence: 7
+  ease: 7
+  total: 343
 ---
 
 # IDEA-001: Christmas Ornament Output Mode

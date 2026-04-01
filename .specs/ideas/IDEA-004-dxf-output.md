@@ -1,8 +1,13 @@
 ---
 title: "DXF Output Format"
-status: Captured
+status: Considering
 created: 2026-03-31
 source: research
+ice_scores:
+  impact: 6
+  confidence: 8
+  ease: 8
+  total: 384
 ---
 
 # IDEA-004: DXF Output Format

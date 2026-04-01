@@ -1,8 +1,13 @@
 ---
 title: "Batch Processing from Config File"
-status: Captured
+status: Considering
 created: 2026-03-31
 source: vision
+ice_scores:
+  impact: 5
+  confidence: 8
+  ease: 6
+  total: 240
 ---
 
 # IDEA-005: Batch Processing from Config File

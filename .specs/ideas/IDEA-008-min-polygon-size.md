@@ -1,8 +1,9 @@
 ---
 title: "Configurable Minimum Polygon Size Filter"
-status: Captured
+status: Declined
 created: 2026-03-31
 source: user
+declined_reason: "Already implemented — --min-polygon CLI flag exists in contours/simplify.py"
 ---
 
 # IDEA-008: Configurable Minimum Polygon Size Filter
