@@ -17,6 +17,7 @@ dependencies = [
     "pyproj>=3.6",
     "xarray>=2024.0",
     "netcdf4>=1.6",
+    "matplotlib>=3.8",
 ]
 
 [project.optional-dependencies]
@@ -25,9 +26,6 @@ us = [
 ]
 landmarks = [
     "osmnx>=1.9",
-]
-render = [
-    "matplotlib>=3.8",
 ]
 smooth = [
     "svgpathtools>=1.6",
