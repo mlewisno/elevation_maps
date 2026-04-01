@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+#
+# commit-msg - Validate commit message format
+#
+# Runs commit-lint validator on the commit message.
+# Install with: scripts/hooks/install.sh
+#
+# Exit codes:
+#   0 - Commit message is valid
+#   1 - Commit message format is invalid
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
+# The commit message file is passed as the first argument
+COMMIT_MSG_FILE="$1"
+
+# Find the hooks directory (works whether run from .git/hooks or directly)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# If running from .git/hooks, find the actual scripts directory
+if [[ "$SCRIPT_DIR" == *".git/hooks"* ]]; then
+    # Look for scripts/hooks relative to repo root
+    REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+    HOOKS_DIR="$REPO_ROOT/scripts/hooks"
+else
+    HOOKS_DIR="$SCRIPT_DIR"
+fi
+
+VALIDATORS_DIR="$HOOKS_DIR/validators"
+CONFIG_FILE="$HOOKS_DIR/config.sh"
+
+# Load config to check if commit-lint is enabled
+COMMIT_LINT_ENABLED=true
+if [[ -f "$CONFIG_FILE" ]]; then
+    # shellcheck source=/dev/null
+    source "$CONFIG_FILE"
+fi
+
+# Skip if disabled
+if [[ "$COMMIT_LINT_ENABLED" != "true" ]]; then
+    exit 0
+fi
+
+# Run commit-lint validator
+COMMIT_LINT="$VALIDATORS_DIR/commit-lint.sh"
+
+if [[ ! -f "$COMMIT_LINT" ]]; then
+    echo -e "${CYAN}INFO:${NC} commit-lint.sh not found, skipping validation"
+    exit 0
+fi
+
+if [[ ! -x "$COMMIT_LINT" ]]; then
+    chmod +x "$COMMIT_LINT"
+fi
+
+# Run the validator with the commit message file
+if "$COMMIT_LINT" "$COMMIT_MSG_FILE"; then
+    exit 0
+else
+    echo ""
+    echo -e "${RED}Commit message validation failed.${NC}"
+    echo "Fix the message format or use --no-verify to bypass (not recommended)."
+    exit 1
+fi

@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+#
+# pre-push - Main hook dispatcher
+#
+# Runs configured validators before push.
+# Install with: scripts/hooks/install.sh
+#
+# Exit codes:
+#   0 - All validators passed
+#   1 - One or more validators failed
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
+# Find the hooks directory (works whether run from .git/hooks or directly)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# If running from .git/hooks, find the actual scripts directory
+if [[ "$SCRIPT_DIR" == *".git/hooks"* ]]; then
+    # Look for scripts/hooks relative to repo root
+    REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+    HOOKS_DIR="$REPO_ROOT/scripts/hooks"
+else
+    HOOKS_DIR="$SCRIPT_DIR"
+fi
+
+VALIDATORS_DIR="$HOOKS_DIR/validators"
+CONFIG_FILE="$HOOKS_DIR/config.sh"
+
+# Default validators if no config
+DEFAULT_VALIDATORS=(commit-lint diff-size single-concern)
+
+# Load config
+if [[ -f "$CONFIG_FILE" ]]; then
+    # shellcheck source=/dev/null
+    source "$CONFIG_FILE"
+else
+    VALIDATORS=("${DEFAULT_VALIDATORS[@]}")
+fi
+
+echo -e "${BOLD}Running pre-push validators...${NC}"
+echo ""
+
+FAILED=0
+PASSED=0
+WARNED=0
+
+run_validator() {
+    local name="$1"
+    local script=""
+
+    # Find validator script (supports multiple languages)
+    for ext in .sh .rb .py ""; do
+        if [[ -f "$VALIDATORS_DIR/${name}${ext}" ]]; then
+            script="$VALIDATORS_DIR/${name}${ext}"
+            break
+        fi
+    done
+
+    if [[ -z "$script" ]]; then
+        echo -e "${RED}Validator not found:${NC} $name"
+        return 1
+    fi
+
+    if [[ ! -x "$script" ]]; then
+        echo -e "${CYAN}Making validator executable:${NC} $script"
+        chmod +x "$script"
+    fi
+
+    echo -e "${BOLD}[$name]${NC}"
+
+    local exit_code=0
+    "$script" || exit_code=$?
+
+    if [[ $exit_code -eq 0 ]]; then
+        PASSED=$((PASSED + 1))
+        return 0
+    elif [[ $exit_code -eq 2 ]]; then
+        # Exit code 2 = warnings only (non-blocking)
+        WARNED=$((WARNED + 1))
+        return 0
+    else
+        # Other non-zero exit means failure
+        FAILED=$((FAILED + 1))
+        return 1
+    fi
+}
+
+# Run each configured validator
+for validator in "${VALIDATORS[@]}"; do
+    echo ""
+    run_validator "$validator" || true
+done
+
+echo ""
+echo -e "${BOLD}Summary:${NC}"
+echo "  Passed:   $PASSED"
+echo "  Warnings: $WARNED"
+echo "  Failed:   $FAILED"
+echo ""
+
+if [[ $FAILED -gt 0 ]]; then
+    echo -e "${RED}Pre-push checks failed.${NC}"
+    echo "Fix the issues above or use --no-verify to bypass (not recommended)."
+    exit 1
+fi
+
+echo -e "${GREEN}All pre-push checks passed.${NC}"
+exit 0

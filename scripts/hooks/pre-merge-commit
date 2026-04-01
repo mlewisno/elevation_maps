@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+#
+# pre-merge-commit - Block local merges into protected branches
+#
+# Runs before a merge commit is created. Blocks merges into main/master
+# to enforce GitHub PR-based merges.
+#
+# Install with: scripts/hooks/install.sh
+#
+# Exit codes:
+#   0 - Merge allowed
+#   1 - Merge blocked (on protected branch)
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+# Find the hooks directory (works whether run from .git/hooks or directly)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ "$SCRIPT_DIR" == *".git/hooks"* ]]; then
+    REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+    HOOKS_DIR="$REPO_ROOT/scripts/hooks"
+else
+    HOOKS_DIR="$SCRIPT_DIR"
+fi
+
+CONFIG_FILE="$HOOKS_DIR/config.sh"
+
+# Default protected branches
+PROTECTED_BRANCHES=(main master)
+
+# Load config
+if [[ -f "$CONFIG_FILE" ]]; then
+    # shellcheck source=/dev/null
+    source "$CONFIG_FILE"
+fi
+
+# Get current branch
+CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
+
+if [[ -z "$CURRENT_BRANCH" ]]; then
+    exit 0
+fi
+
+for branch in "${PROTECTED_BRANCHES[@]}"; do
+    if [[ "$CURRENT_BRANCH" == "$branch" ]]; then
+        echo ""
+        echo -e "${RED}${BOLD}BLOCKED:${NC} Local merges into '${branch}' are not allowed."
+        echo ""
+        echo "All merges to ${branch} must go through GitHub pull requests."
+        echo ""
+        echo "To merge via GitHub:"
+        echo "  git push -u origin <your-branch>"
+        echo "  gh pr create --title \"feat: ...\" --body \"...\""
+        echo "  gh pr merge --merge --delete-branch"
+        echo ""
+        echo "Or use /feature to manage the full workflow."
+        exit 1
+    fi
+done
+
+exit 0
