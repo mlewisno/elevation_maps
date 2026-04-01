@@ -33,6 +33,7 @@ dev = [
     "pytest>=8.0",
     "black>=24.0",
     "ruff>=0.3",
+    "mypy>=1.8",
     "matplotlib>=3.8",
 ]
 
