@@ -7,11 +7,11 @@
 
 # Which validators to run on pre-commit (fast, per-commit checks)
 # Available: branch-protect diff-size-check single-concern-check ruby rails-frontend
-PRE_COMMIT_VALIDATORS=(branch-protect diff-size-check single-concern-check adr-check)
+PRE_COMMIT_VALIDATORS=(branch-protect diff-size-check single-concern-check adr-check python)
 
 # Which validators to run on pre-push (full-project checks)
-# Available: spec-check ruby-full security coverage-check twelve-factor-check skill-lint config-check context-bloat ruby-validators dirty-check rails-frontend readme-check
-VALIDATORS=(skill-lint config-check context-bloat dirty-check readme-check)
+# Available: spec-check ruby-full security coverage-check twelve-factor-check skill-lint config-check context-bloat ruby-validators dirty-check rails-frontend readme-check python python-security
+VALIDATORS=(skill-lint config-check context-bloat dirty-check readme-check python python-security)
 
 # Commit message validation (runs on commit-msg hook)
 COMMIT_LINT_ENABLED=true
