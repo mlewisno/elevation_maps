@@ -129,3 +129,74 @@ def write_svg(
     dwg.save()
     logger.info("SVG written to %s (%.1fmm x %.1fmm)", output_path, total_w, total_h)
     return output_path
+
+
+def write_per_layer_svgs(
+    gdf: gpd.GeoDataFrame,
+    alignment_outlines: dict[int, list],
+    output_dir: Path,
+    width_mm: float,
+    height_mm: float,
+    frame_polygon=None,
+    cut_color: str = CUT_COLOR,
+    engrave_color: str = ENGRAVE_ALIGN_COLOR,
+) -> list[Path]:
+    """Write individual SVG files per layer into a 'layers/' subdirectory.
+
+    Returns list of paths written.
+    """
+    layers_dir = output_dir / "layers"
+    layers_dir.mkdir(parents=True, exist_ok=True)
+
+    written = []
+    sorted_layers = sorted(gdf["layer"].unique())
+
+    for layer_idx in sorted_layers:
+        row = gdf[gdf["layer"] == layer_idx].iloc[0]
+        layer_type = row["type"]
+        filename = f"layer-{layer_idx:02d}-{layer_type}.svg"
+
+        single = gdf[gdf["layer"] == layer_idx].copy()
+        single_outlines = {}
+        if layer_idx in alignment_outlines:
+            single_outlines[layer_idx] = alignment_outlines[layer_idx]
+
+        path = write_svg(
+            gdf=single,
+            alignment_outlines=single_outlines,
+            output_path=layers_dir / filename,
+            width_mm=width_mm,
+            height_mm=height_mm,
+            frame_polygon=None,
+            cut_color=cut_color,
+            engrave_color=engrave_color,
+        )
+        written.append(path)
+
+    if frame_polygon:
+        frame_gdf = gpd.GeoDataFrame(
+            [
+                {
+                    "layer": -1,
+                    "elevation_min": 0,
+                    "elevation_max": 0,
+                    "type": "frame",
+                    "geometry": frame_polygon,
+                }
+            ],
+            crs=gdf.crs,
+        )
+        path = write_svg(
+            gdf=frame_gdf,
+            alignment_outlines={},
+            output_path=layers_dir / "frame.svg",
+            width_mm=width_mm,
+            height_mm=height_mm,
+            frame_polygon=frame_polygon,
+            cut_color=cut_color,
+            engrave_color=engrave_color,
+        )
+        written.append(path)
+
+    logger.info("Wrote %d per-layer SVGs to %s", len(written), layers_dir)
+    return written

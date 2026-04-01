@@ -12,6 +12,7 @@ from topo2laser.contours import calculate_layers, generate_contours
 from topo2laser.contours.simplify import simplify_contours
 from topo2laser.elevation import BoundingBox, fetch_elevation
 from topo2laser.svg import project_and_scale, write_svg
+from topo2laser.svg.writer import write_per_layer_svgs
 
 logger = logging.getLogger(__name__)
 
@@ -107,13 +108,23 @@ def run(config: PipelineConfig) -> Path:
             border_mm=config.frame_border_mm,
         )
 
-    # Stage 4: Write SVG
-    logger.info("Stage 4: Writing SVG...")
+    # Stage 4: Write SVGs
+    logger.info("Stage 4: Writing combined SVG...")
     output_path = config.output_dir / "topo_map.svg"
     write_svg(
         gdf=gdf,
         alignment_outlines=alignment_outlines,
         output_path=output_path,
+        width_mm=dims.width_mm,
+        height_mm=dims.height_mm,
+        frame_polygon=frame_polygon,
+    )
+
+    logger.info("Stage 4b: Writing per-layer SVGs...")
+    write_per_layer_svgs(
+        gdf=gdf,
+        alignment_outlines=alignment_outlines,
+        output_dir=config.output_dir,
         width_mm=dims.width_mm,
         height_mm=dims.height_mm,
         frame_polygon=frame_polygon,
