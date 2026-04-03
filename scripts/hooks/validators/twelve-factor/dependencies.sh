@@ -7,7 +7,7 @@
 #
 # Supported languages:
 # - Ruby: Gemfile -> Gemfile.lock
-# - Python: pyproject.toml -> poetry.lock, Pipfile -> Pipfile.lock
+# - Python: pyproject.toml -> uv.lock or poetry.lock, Pipfile -> Pipfile.lock
 # - Go: go.mod -> go.sum
 # - Node: package.json -> package-lock.json, yarn.lock, or pnpm-lock.yaml
 #
@@ -76,10 +76,15 @@ check_ruby() {
 check_python() {
     local has_issue=0
 
-    # Poetry: pyproject.toml -> poetry.lock
+    # pyproject.toml projects: check for uv.lock or poetry.lock
     if [[ -f "pyproject.toml" ]]; then
-        # Check if it's a Poetry project
-        if grep -q '\[tool.poetry\]' pyproject.toml 2>/dev/null; then
+        if [[ -f "uv.lock" ]]; then
+            # uv project
+            if is_staged "pyproject.toml" && ! is_staged "uv.lock"; then
+                OUTDATED_LOCKFILES+=("uv.lock may be outdated (pyproject.toml changed, run: uv lock)")
+            fi
+        elif grep -q '\[tool.poetry\]' pyproject.toml 2>/dev/null; then
+            # Poetry project
             if [[ ! -f "poetry.lock" ]]; then
                 MISSING_LOCKFILES+=("poetry.lock (run: poetry lock)")
                 has_issue=1

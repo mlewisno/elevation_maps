@@ -10,11 +10,13 @@ physical 3D relief of the terrain.
 @~/code/agent_guidance/CLAUDE.md
 
 ## Tech Stack
-- Language: Python 3.12+
-- CLI Framework: TBD (click or typer)
-- Geo libraries: rasterio, shapely, GDAL
-- SVG generation: svgwrite or svgpathtools
-- Data sources: USGS 3DEP, OpenTopography, OSM Overpass
+- Language: Python 3.13
+- Package manager: uv
+- CLI Framework: click
+- Geo libraries: rasterio, shapely, GDAL, geopandas, pyproj
+- SVG generation: svgwrite, svgpathtools
+- 3D rendering: matplotlib
+- Data sources: USGS 3DEP (py3dep), ETOPO (OPeNDAP), OSM Overpass
 - Testing: pytest
 - Formatting: black, ruff
 
@@ -26,6 +28,7 @@ topo2laser/              # Main package
   elevation/             # Fetch & process DEM data
   contours/              # DEM -> contour polygons
   svg/                   # Contour polygons -> laser-ready SVGs
+  render/                # 3D preview rendering
   landmarks/             # OSM landmark/label queries
   alignment/             # Registration marks, engraved guides
 tests/                   # pytest test suite
@@ -37,22 +40,22 @@ scripts/hooks/           # Git hooks & validators
 
 ### Install Dependencies
 ```bash
-pip install -e ".[dev]"
+uv sync --extra dev
 ```
 
 ### Run Tests
 ```bash
-pytest
+uv run pytest
 ```
 
 ### Run Pipeline (target CLI)
 ```bash
-topo2laser --bbox "37.7,-119.8,37.9,-119.5" --layers 8 --output yosemite/
+uv run topo2laser --bbox "37.7,-119.8,37.9,-119.5" --layers 8 --output yosemite/
 ```
 
 ### Format Code
 ```bash
-black topo2laser/ tests/ && ruff check --fix topo2laser/ tests/
+uv run black topo2laser/ tests/ && uv run ruff check --fix topo2laser/ tests/
 ```
 
 ## Project-Specific Rules

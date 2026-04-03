@@ -1,6 +1,6 @@
 ---
 title: "3D Preview Rendering"
-status: Draft
+status: Review
 created: 2026-04-01
 epic: enhancements
 promoted_from: IDEA-003
