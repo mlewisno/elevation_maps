@@ -1,6 +1,6 @@
 ---
 title: "2D Rendered Preview for AI Agent Validation"
-status: In Progress
+status: Review
 created: 2026-04-02
 epic: enhancements
 promoted_from: IDEA-011
