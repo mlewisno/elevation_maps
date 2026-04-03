@@ -1,4 +1,4 @@
-"""Tests for the 3D render module."""
+"""Tests for the 2D and 3D render module."""
 
 import geopandas as gpd
 from shapely.geometry import MultiPolygon, Polygon, box
@@ -6,6 +6,8 @@ from shapely.geometry import MultiPolygon, Polygon, box
 from topo2laser.render.renderer import (
     _collect_polygons,
     _layer_color,
+    _layer_position,
+    render_2d,
     render_3d,
 )
 
@@ -70,6 +72,52 @@ class TestLayerColor:
         low = _layer_color("land", 0.0)
         high = _layer_color("land", 1.0)
         assert low != high
+
+
+class TestLayerPosition:
+    def test_water_position(self):
+        assert _layer_position(0, "water", [0, 1], [2, 3]) == 0.0
+        assert _layer_position(1, "water", [0, 1], [2, 3]) == 1.0
+
+    def test_land_position(self):
+        assert _layer_position(2, "land", [0], [2, 3, 4]) == 0.0
+        assert _layer_position(4, "land", [0], [2, 3, 4]) == 1.0
+
+    def test_single_layer_returns_half(self):
+        assert _layer_position(0, "water", [0], []) == 0.5
+
+
+class TestRender2D:
+    def test_saves_png(self, tmp_path):
+        gdf = _make_gdf()
+        output = tmp_path / "render_2d.png"
+        result = render_2d(
+            gdf=gdf,
+            width_mm=200.0,
+            height_mm=150.0,
+            output_path=output,
+        )
+        assert result == output
+        assert output.exists()
+        assert output.stat().st_size > 0
+
+    def test_creates_parent_dirs(self, tmp_path):
+        gdf = _make_gdf()
+        output = tmp_path / "nested" / "dir" / "render_2d.png"
+        render_2d(
+            gdf=gdf,
+            width_mm=200.0,
+            height_mm=150.0,
+            output_path=output,
+        )
+        assert output.exists()
+
+    def test_output_has_reasonable_size(self, tmp_path):
+        """2D render should be larger than a trivial empty image."""
+        gdf = _make_gdf()
+        output = tmp_path / "render_2d.png"
+        render_2d(gdf=gdf, width_mm=200.0, height_mm=150.0, output_path=output)
+        assert output.stat().st_size > 5000
 
 
 class TestRender3D:
