@@ -1,8 +1,14 @@
 ---
 title: "2D Rendered Preview for AI Agent Validation"
-status: Captured
+status: Promoted
 created: 2026-04-01
 source: user
+promoted_to: FEAT-012
+ice_scores:
+  impact: 9
+  confidence: 9
+  ease: 8
+  total: 648
 ---
 
 # IDEA-011: 2D Rendered Preview for AI Agent Validation
@@ -37,3 +43,11 @@ a raster image that AI agents can read.
 - Enables AI-assisted development loop: change code → generate → inspect → fix
 - Reduces reliance on human visual review for every pipeline change
 - Could be integrated into CI or test workflows for regression detection
+
+## Prioritization Notes (2026-04-02)
+
+ICE 648 (I:9 C:9 E:8). Promoted to FEAT-012. High impact because it
+unlocks AI-driven development feedback loops — Claude Code can read the
+PNG and validate output visually. High confidence because matplotlib 2D
+rendering is straightforward. High ease because we already have the
+layer data and coloring logic from the 3D renderer.
