@@ -11,7 +11,7 @@ from topo2laser.alignment import generate_alignment_outlines, generate_frame
 from topo2laser.contours import calculate_layers, generate_contours
 from topo2laser.contours.simplify import simplify_contours
 from topo2laser.elevation import BoundingBox, fetch_elevation
-from topo2laser.render import render_3d
+from topo2laser.render import render_2d, render_3d
 from topo2laser.svg import project_and_scale, write_svg
 from topo2laser.svg.writer import write_per_layer_svgs
 
@@ -40,6 +40,7 @@ class PipelineConfig:
     max_water_layers: int = 4
     render: bool = False
     render_interactive: bool = False
+    render_2d: bool = False
 
     def __post_init__(self):
         if self.total_height_mm is None and self.layer_count is None:
@@ -138,8 +139,9 @@ def run(config: PipelineConfig) -> Path:
         frame_polygon=frame_polygon,
     )
 
-    # Stage 5: Render 3D preview (optional)
+    # Stage 5: Render previews (optional)
     render_path = None
+    render_2d_path = None
     if config.render or config.render_interactive:
         logger.info("Stage 5: Rendering 3D preview...")
         render_path = render_3d(
@@ -150,21 +152,33 @@ def run(config: PipelineConfig) -> Path:
             output_path=config.output_dir / "render.png",
             interactive=config.render_interactive,
         )
+    if config.render_2d:
+        logger.info("Stage 5b: Rendering 2D preview...")
+        render_2d_path = render_2d(
+            gdf=gdf,
+            width_mm=dims.width_mm,
+            height_mm=dims.height_mm,
+            output_path=config.output_dir / "render_2d.png",
+        )
 
     # Print summary
-    _print_summary(gdf, layer_config, dims, output_path, render_path)
+    _print_summary(gdf, layer_config, dims, output_path, render_path, render_2d_path)
 
     return output_path
 
 
-def _print_summary(gdf, layer_config, dims, output_path, render_path=None):
+def _print_summary(
+    gdf, layer_config, dims, output_path, render_path=None, render_2d_path=None
+):
     """Print a human-readable summary of the output."""
     print(f"\n{'=' * 50}")
     print("topo2laser output summary")
     print(f"{'=' * 50}")
     print(f"Output: {output_path}")
     if render_path:
-        print(f"Render: {render_path}")
+        print(f"3D Render: {render_path}")
+    if render_2d_path:
+        print(f"2D Render: {render_2d_path}")
     print(f"Dimensions: {dims.width_mm:.1f}mm x {dims.height_mm:.1f}mm")
     print(
         f"Layers: {layer_config.layer_count} "
