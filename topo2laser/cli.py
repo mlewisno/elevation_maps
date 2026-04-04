@@ -94,6 +94,18 @@ def _parse_mm(value: str | None) -> float | None:
     help="Max layers for ocean depth (rest go to land). 0 = uniform.",
 )
 @click.option(
+    "--water-layers",
+    default=None,
+    type=int,
+    help="Exact number of water layers (overrides --max-water-layers).",
+)
+@click.option(
+    "--land-layers",
+    default=None,
+    type=int,
+    help="Exact number of land layers.",
+)
+@click.option(
     "--render/--no-render",
     default=False,
     help="Generate a 3D preview PNG of the stacked layers.",
@@ -126,6 +138,8 @@ def main(
     simplify_tolerance,
     min_polygon,
     max_water_layers,
+    water_layers,
+    land_layers,
     high_res,
     render,
     render_interactive,
@@ -156,6 +170,8 @@ def main(
         high_res_land=high_res,
         min_polygon_mm=_parse_mm(min_polygon) or 5.0,
         max_water_layers=max_water_layers,
+        water_layers=water_layers,
+        land_layers=land_layers,
         include_frame=frame,
         frame_border_mm=_parse_mm(frame_border) or 15.0,
         smooth_iterations=smooth_iterations,

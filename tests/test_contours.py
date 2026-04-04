@@ -129,3 +129,55 @@ class TestCalculateLayers:
             if config.layer_info(i)["type"] == "land"
         )
         assert land_count == 6
+
+    def test_explicit_water_and_land_layers(self):
+        config = calculate_layers(
+            elevation_min=-3000,
+            elevation_max=1500,
+            material_thickness_mm=3.0,
+            water_layers=3,
+            land_layers=7,
+        )
+        assert config.layer_count == 10
+        bp = config.breakpoints()
+        assert 0.0 in bp
+        water_count = sum(
+            1
+            for i in range(config.layer_count)
+            if config.layer_info(i)["type"] == "water"
+        )
+        assert water_count == 3
+
+    def test_water_layers_with_total(self):
+        config = calculate_layers(
+            elevation_min=-3000,
+            elevation_max=1500,
+            material_thickness_mm=3.0,
+            layer_count=12,
+            water_layers=4,
+        )
+        assert config.layer_count == 12
+        bp = config.breakpoints()
+        assert 0.0 in bp
+        water_count = sum(
+            1
+            for i in range(config.layer_count)
+            if config.layer_info(i)["type"] == "water"
+        )
+        assert water_count == 4
+
+    def test_land_layers_with_total(self):
+        config = calculate_layers(
+            elevation_min=-3000,
+            elevation_max=1500,
+            material_thickness_mm=3.0,
+            layer_count=12,
+            land_layers=8,
+        )
+        assert config.layer_count == 12
+        water_count = sum(
+            1
+            for i in range(config.layer_count)
+            if config.layer_info(i)["type"] == "water"
+        )
+        assert water_count == 4
