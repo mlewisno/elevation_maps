@@ -147,6 +147,26 @@ def project_and_scale(
         full_mask = scaled["full_coverage"] == True  # noqa: E712
         scaled.loc[full_mask, "geometry"] = output_rect
 
+    # Snap near-edge layers to the output rectangle — raster pixel
+    # alignment causes a ~1mm gap between contour edge and output border.
+    # Buffer the geometry outward then clip to the output rect.
+    snap_tolerance = 2.0  # mm
+    for idx, row in scaled.iterrows():
+        geom = row["geometry"]
+        if geom.is_empty or row.get("full_coverage", False):
+            continue
+        b = geom.bounds
+        near_edge = (
+            b[0] < snap_tolerance
+            or b[1] < snap_tolerance
+            or (width_mm - b[2]) < snap_tolerance
+            or (height_mm - b[3]) < snap_tolerance
+        )
+        if near_edge:
+            scaled.at[idx, "geometry"] = make_valid(
+                geom.buffer(snap_tolerance).intersection(output_rect)
+            )
+
     if dims.exceeds_bed:
         logger.warning(
             "Output (%.0fmm x %.0fmm) exceeds xTool P2 bed (%.0fmm x %.0fmm)",
