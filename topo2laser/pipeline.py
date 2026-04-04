@@ -82,7 +82,14 @@ def run(config: PipelineConfig) -> Path:
         layer_config.total_height_mm,
     )
 
-    gdf = generate_contours(raster_path, layer_config)
+    # Find land mask (3DEP) if high-res was used
+    land_mask_path = None
+    if config.high_res_land:
+        dep3_candidates = list(raster_path.parent.glob("3dep_*.tif"))
+        if dep3_candidates:
+            land_mask_path = dep3_candidates[0]
+
+    gdf = generate_contours(raster_path, layer_config, land_mask_path=land_mask_path)
 
     # Stage 3: Project and scale to mm
     logger.info("Stage 3: Projecting and scaling to mm...")

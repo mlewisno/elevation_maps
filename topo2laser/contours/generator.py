@@ -22,6 +22,7 @@ def generate_contours(
     raster_path: Path,
     layer_config: LayerConfig,
     min_area_fraction: float = MIN_AREA_FRACTION,
+    land_mask_path: Path | None = None,
 ) -> gpd.GeoDataFrame:
     """Generate contour band polygons from a DEM raster.
 
@@ -30,6 +31,10 @@ def generate_contours(
     (the base piece). All other layers show only the area between their
     threshold and the next layer's threshold — the ring that would be
     exposed when looking down at the assembled map.
+
+    If land_mask_path is provided (e.g., a 3DEP raster), land layer
+    masks are intersected with its valid-data pixels to clip to actual
+    coastlines rather than including shallow ocean shelf.
 
     Returns a GeoDataFrame with columns:
         - layer: layer index (0 = bottom/deepest)
@@ -42,6 +47,18 @@ def generate_contours(
         elevation = src.read(1)
         transform = src.transform
         crs = src.crs
+
+    # Load land mask from high-res source if available
+    land_mask = None
+    if land_mask_path is not None and land_mask_path.exists():
+        with rasterio.open(land_mask_path) as lm_src:
+            lm_data = lm_src.read(1)
+            land_mask = ~np.isnan(lm_data)
+            logger.info(
+                "Land mask loaded: %d land pixels (%.1f%%)",
+                land_mask.sum(),
+                land_mask.sum() / land_mask.size * 100,
+            )
 
     total_pixels = elevation.size
     min_area_pixels = total_pixels * min_area_fraction
@@ -66,7 +83,10 @@ def generate_contours(
         else:
             # Land layers: cumulative (everything >= threshold)
             # Shows the island/terrain shape at this elevation
-            mask = (elevation >= threshold).astype(np.uint8)
+            above = elevation >= threshold
+            if land_mask is not None:
+                above = above & land_mask
+            mask = above.astype(np.uint8)
 
         if mask.sum() == 0:
             logger.debug("Layer %d: no pixels in band, skipping", i, threshold)
