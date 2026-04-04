@@ -51,9 +51,9 @@ else
     PYTHON="python3"
 fi
 
-# Run comparison
-output=$($PYTHON "$PROJECT_ROOT/scripts/visual-regression-check.py" --all 2>/dev/null) || true
-exit_code=$?
+# Run comparison (filter to JSON lines only — pipeline prints summaries to stdout)
+raw_output=$($PYTHON "$PROJECT_ROOT/scripts/visual-regression-check.py" --all 2>/dev/null) || true
+output=$(echo "$raw_output" | grep '^\{' || true)
 
 if [[ -z "$output" ]]; then
     echo -e "\033[0;33mWARNING:\033[0m Could not run visual regression (missing deps?)"
