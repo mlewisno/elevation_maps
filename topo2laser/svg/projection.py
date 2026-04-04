@@ -59,16 +59,31 @@ def project_and_scale(
 
     Returns the transformed GeoDataFrame and physical dimensions.
     """
+    # Clip to bbox in original CRS before projecting — prevents raster-edge
+    # geometry from warping under LAEA projection
+    if all(v is not None for v in (bbox_south, bbox_west, bbox_north, bbox_east)):
+        bbox_clip = box(bbox_west, bbox_south, bbox_east, bbox_north)
+        gdf = gdf.copy()
+        gdf["geometry"] = gdf["geometry"].intersection(bbox_clip)
+        gdf["geometry"] = gdf["geometry"].apply(make_valid)
+
     crs = laea_crs(center_lat, center_lon)
     projected = gdf.to_crs(crs)
 
     # Derive extent from projected bbox corners if available
     if all(v is not None for v in (bbox_south, bbox_west, bbox_north, bbox_east)):
-        bbox_gdf = gpd.GeoDataFrame(
-            geometry=[box(bbox_west, bbox_south, bbox_east, bbox_north)],
-            crs="EPSG:4326",
-        ).to_crs(crs)
-        bbox_bounds = bbox_gdf.total_bounds
+        # Project corner points directly (not a polygon, which curves)
+        transformer = pyproj.Transformer.from_crs("EPSG:4326", crs, always_xy=True)
+        corners_x, corners_y = transformer.transform(
+            [bbox_west, bbox_east, bbox_west, bbox_east],
+            [bbox_south, bbox_south, bbox_north, bbox_north],
+        )
+        bbox_bounds = [
+            min(corners_x),
+            min(corners_y),
+            max(corners_x),
+            max(corners_y),
+        ]
         extent_x = bbox_bounds[2] - bbox_bounds[0]
         extent_y = bbox_bounds[3] - bbox_bounds[1]
     else:
@@ -119,10 +134,12 @@ def project_and_scale(
         scale_factor=scale,
     )
 
-    # Replace base layer (layer 0) with a clean output rectangle
-    base_mask = scaled["layer"] == 0
-    if base_mask.any():
-        scaled.loc[base_mask, "geometry"] = box(0, 0, width_mm, height_mm)
+    # Replace full-coverage layers with clean output rectangles
+    # to eliminate LAEA warp curves at raster edges
+    output_rect = box(0, 0, width_mm, height_mm)
+    if "full_coverage" in scaled.columns:
+        full_mask = scaled["full_coverage"] == True  # noqa: E712
+        scaled.loc[full_mask, "geometry"] = output_rect
 
     if dims.exceeds_bed:
         logger.warning(

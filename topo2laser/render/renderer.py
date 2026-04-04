@@ -98,6 +98,12 @@ def render_2d(
     land_layers = gdf[gdf["type"] != "water"]["layer"].tolist()
     legend_entries = []
 
+    # Set axes background to base layer color so corner gaps are invisible
+    base_row = gdf.sort_values("layer").iloc[0]
+    base_type = base_row["type"]
+    base_pos = _layer_position(base_row["layer"], base_type, water_layers, land_layers)
+    ax.set_facecolor(_layer_color(base_type, base_pos))
+
     # Draw layers bottom-to-top (sorted by layer index)
     for _, row in gdf.sort_values("layer").iterrows():
         layer_idx = row["layer"]

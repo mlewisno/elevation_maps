@@ -8,15 +8,15 @@ from topo2laser.elevation.sources import _tile_label, _tiles_for_bbox
 
 class TestBoundingBox:
     def test_from_string(self):
-        bbox = BoundingBox.from_string("21.8,-160.3,22.3,-159.2")
-        assert bbox.south == 21.8
-        assert bbox.west == -160.3
+        bbox = BoundingBox.from_string("21.71,-160.5,22.3,-159.2")
+        assert bbox.south == 21.71
+        assert bbox.west == -160.5
         assert bbox.north == 22.3
         assert bbox.east == -159.2
 
     def test_from_string_with_spaces(self):
-        bbox = BoundingBox.from_string("21.8, -160.3, 22.3, -159.2")
-        assert bbox.south == 21.8
+        bbox = BoundingBox.from_string("21.71, -160.5, 22.3, -159.2")
+        assert bbox.south == 21.71
 
     def test_invalid_south_north(self):
         with pytest.raises(ValueError, match="South.*must be less than north"):
@@ -28,7 +28,7 @@ class TestBoundingBox:
 
     def test_wrong_part_count(self):
         with pytest.raises(ValueError, match="Expected 4"):
-            BoundingBox.from_string("21.8,-160.3,22.3")
+            BoundingBox.from_string("21.71,-160.5,22.3")
 
     def test_center(self):
         bbox = BoundingBox(south=20.0, west=-160.0, north=22.0, east=-158.0)
@@ -50,7 +50,7 @@ class TestTileLabel:
 class TestTilesForBbox:
     def test_kauai_tiles(self):
         # Kaua'i: ~21.8N to 22.3N, 160.3W to 159.2W
-        tiles = _tiles_for_bbox(21.8, -160.3, 22.3, -159.2)
+        tiles = _tiles_for_bbox(21.8, -160.5, 22.3, -159.2)
         assert len(tiles) > 0
         # Should need the tile covering 15-30N, 165-150W
         assert "N30W165" in tiles
