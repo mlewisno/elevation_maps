@@ -74,18 +74,13 @@ def generate_contours(
         if i == 0:
             # Bottom layer: full rectangle (base piece)
             mask = np.ones_like(elevation, dtype=np.uint8)
-        elif info["type"] == "water" and i < layer_config.layer_count - 1:
-            # Water layers: band shape (area between this and next threshold)
-            # Shows the ocean floor contour visible from above
-            above_this = elevation >= threshold
-            next_threshold = breakpoints[i + 1]
-            above_next = elevation >= next_threshold
-            mask = (above_this & ~above_next).astype(np.uint8)
         else:
-            # Land layers: cumulative (everything >= threshold)
-            # Shows the island/terrain shape at this elevation
+            # All layers use cumulative shape (everything >= threshold).
+            # Each physical piece is cut as "everything at or above this
+            # elevation." When stacked, higher layers cover lower ones,
+            # producing the visible contour bands naturally.
             above = elevation >= threshold
-            if land_mask is not None:
+            if info["type"] != "water" and land_mask is not None:
                 above = above & land_mask
             mask = above.astype(np.uint8)
 
