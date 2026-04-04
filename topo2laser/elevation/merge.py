@@ -42,9 +42,10 @@ def merge_land_and_ocean(
             resampling=Resampling.bilinear,
         )
 
-    # Merge: use land data where > 0, ETOPO where <= 0
-    # Buffer slightly: use land data where land > -5m to avoid coastline gaps
-    land_mask = land_data > -5.0
+    # Merge: use land data only for actual land (> 1m), ETOPO everywhere else.
+    # 3DEP tiles include ocean pixels with elevation ~0m — using those would
+    # create a rectangular plateau at the tile boundary.
+    land_mask = (~np.isnan(land_data)) & (land_data > 1.0)
     merged = np.where(land_mask, land_data, etopo_resampled)
 
     # Write merged result

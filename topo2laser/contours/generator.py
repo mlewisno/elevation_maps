@@ -22,12 +22,19 @@ def generate_contours(
     raster_path: Path,
     layer_config: LayerConfig,
     min_area_fraction: float = MIN_AREA_FRACTION,
+    land_mask_path: Path | None = None,
 ) -> gpd.GeoDataFrame:
-    """Generate contour polygons from a DEM raster.
+    """Generate contour band polygons from a DEM raster.
 
-    For each layer, creates a polygon representing all areas at or above
-    that layer's minimum elevation. This produces the shape that would be
-    cut for that physical layer.
+    Each layer represents the elevation band visible from above when
+    layers are stacked. The bottom layer (index 0) is a full rectangle
+    (the base piece). All other layers show only the area between their
+    threshold and the next layer's threshold — the ring that would be
+    exposed when looking down at the assembled map.
+
+    If land_mask_path is provided (e.g., a 3DEP raster), land layer
+    masks are intersected with its valid-data pixels to clip to actual
+    coastlines rather than including shallow ocean shelf.
 
     Returns a GeoDataFrame with columns:
         - layer: layer index (0 = bottom/deepest)
@@ -41,7 +48,18 @@ def generate_contours(
         transform = src.transform
         crs = src.crs
 
-    # Calculate total raster area for minimum area filtering
+    # Load land mask from high-res source if available
+    land_mask = None
+    if land_mask_path is not None and land_mask_path.exists():
+        with rasterio.open(land_mask_path) as lm_src:
+            lm_data = lm_src.read(1)
+            land_mask = (~np.isnan(lm_data)) & (lm_data > 1.0)
+            logger.info(
+                "Land mask loaded: %d land pixels (%.1f%%)",
+                land_mask.sum(),
+                land_mask.sum() / land_mask.size * 100,
+            )
+
     total_pixels = elevation.size
     min_area_pixels = total_pixels * min_area_fraction
 
@@ -52,14 +70,28 @@ def generate_contours(
         threshold = breakpoints[i]
         info = layer_config.layer_info(i)
 
-        # Create binary mask: 1 where elevation >= threshold
-        mask = (elevation >= threshold).astype(np.uint8)
+        if i == 0:
+            # Bottom layer: full rectangle (base piece)
+            mask = np.ones_like(elevation, dtype=np.uint8)
+        elif info["type"] == "water" and i < layer_config.layer_count - 1:
+            # Water layers: band shape (area between this and next threshold)
+            # Shows the ocean floor contour visible from above
+            above_this = elevation >= threshold
+            next_threshold = breakpoints[i + 1]
+            above_next = elevation >= next_threshold
+            mask = (above_this & ~above_next).astype(np.uint8)
+        else:
+            # Land layers: cumulative (everything >= threshold)
+            # Shows the island/terrain shape at this elevation
+            above = elevation >= threshold
+            if land_mask is not None:
+                above = above & land_mask
+            mask = above.astype(np.uint8)
 
         if mask.sum() == 0:
-            logger.debug("Layer %d: no pixels above %.1fm, skipping", i, threshold)
+            logger.debug("Layer %d: no pixels in band, skipping", i, threshold)
             continue
 
-        # Vectorize the mask into polygons
         polygons = _vectorize_mask(mask, transform, min_area_pixels)
 
         if polygons is None:

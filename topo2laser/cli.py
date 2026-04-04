@@ -104,6 +104,11 @@ def _parse_mm(value: str | None) -> float | None:
     default=False,
     help="Open an interactive 3D preview window (implies --render).",
 )
+@click.option(
+    "--render-2d/--no-render-2d",
+    default=False,
+    help="Generate a top-down 2D preview PNG with filled color layers.",
+)
 @click.option("-v", "--verbose", is_flag=True, help="Show detailed logging.")
 def main(
     bbox,
@@ -124,6 +129,7 @@ def main(
     high_res,
     render,
     render_interactive,
+    render_2d,
     verbose,
 ):
     """Convert geographic elevation data to laser-cuttable SVG layers."""
@@ -156,6 +162,7 @@ def main(
         simplify_tolerance_mm=_parse_mm(simplify_tolerance) or 0.5,
         render=render or render_interactive,
         render_interactive=render_interactive,
+        render_2d=render_2d,
     )
 
     result = run(config)
