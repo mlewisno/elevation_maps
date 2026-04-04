@@ -38,13 +38,15 @@ generate_location() {
         --bbox "$bbox"
         --output "$REF_DIR/$location/output"
         --material-thickness "$material"
-        --water-layers "$water_layers"
         --layers "$layers"
         --width "$width"
         --render-2d
         --render
     )
 
+    if [[ "$water_layers" != "null" ]]; then
+        args+=(--water-layers "$water_layers")
+    fi
     if [[ "$high_res" == "true" ]]; then
         args+=(--high-res)
     fi
