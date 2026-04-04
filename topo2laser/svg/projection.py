@@ -64,11 +64,18 @@ def project_and_scale(
 
     # Derive extent from projected bbox corners if available
     if all(v is not None for v in (bbox_south, bbox_west, bbox_north, bbox_east)):
-        bbox_gdf = gpd.GeoDataFrame(
-            geometry=[box(bbox_west, bbox_south, bbox_east, bbox_north)],
-            crs="EPSG:4326",
-        ).to_crs(crs)
-        bbox_bounds = bbox_gdf.total_bounds
+        # Project corner points directly (not a polygon, which curves)
+        transformer = pyproj.Transformer.from_crs("EPSG:4326", crs, always_xy=True)
+        corners_x, corners_y = transformer.transform(
+            [bbox_west, bbox_east, bbox_west, bbox_east],
+            [bbox_south, bbox_south, bbox_north, bbox_north],
+        )
+        bbox_bounds = [
+            min(corners_x),
+            min(corners_y),
+            max(corners_x),
+            max(corners_y),
+        ]
         extent_x = bbox_bounds[2] - bbox_bounds[0]
         extent_y = bbox_bounds[3] - bbox_bounds[1]
     else:
