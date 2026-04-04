@@ -88,11 +88,10 @@ def generate_contours(
                 above = above & land_mask
             mask = above.astype(np.uint8)
 
-        # If mask covers nearly all pixels, use full rectangle to avoid
-        # LAEA projection warp artifacts at raster edges
+        # Flag layers that cover nearly all pixels — projection will
+        # replace them with clean output rectangles to avoid LAEA warp
         coverage = mask.sum() / total_pixels
-        if coverage > 0.90 and i > 0:
-            mask = np.ones_like(elevation, dtype=np.uint8)
+        is_full_coverage = i == 0 or coverage > 0.90
 
         if mask.sum() == 0:
             logger.debug("Layer %d: no pixels in band, skipping", i, threshold)
@@ -110,6 +109,7 @@ def generate_contours(
                 "elevation_min": info["elevation_min"],
                 "elevation_max": info["elevation_max"],
                 "type": info["type"],
+                "full_coverage": is_full_coverage,
                 "geometry": polygons,
             }
         )

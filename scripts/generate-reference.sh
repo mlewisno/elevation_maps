@@ -41,7 +41,6 @@ generate_location() {
         --layers "$layers"
         --width "$width"
         --render-2d
-        --render
     )
 
     if [[ "$water_layers" != "null" ]]; then

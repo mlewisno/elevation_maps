@@ -100,6 +100,8 @@ def _chaikin_smooth(coords: np.ndarray, iterations: int) -> np.ndarray:
     along the edge, producing progressively smoother curves.
     The ring is treated as closed (last point connects to first).
     """
+    if len(coords) < 3:
+        return coords
     # Remove closing duplicate if present
     if np.array_equal(coords[0], coords[-1]):
         coords = coords[:-1]
