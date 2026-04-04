@@ -11,7 +11,7 @@ PRE_COMMIT_VALIDATORS=(branch-protect diff-size-check single-concern-check adr-c
 
 # Which validators to run on pre-push (full-project checks)
 # Available: spec-check ruby-full security coverage-check twelve-factor-check skill-lint config-check context-bloat ruby-validators dirty-check rails-frontend readme-check python python-security
-VALIDATORS=(skill-lint config-check context-bloat dirty-check readme-check python python-security)
+VALIDATORS=(skill-lint config-check context-bloat dirty-check readme-check python python-security visual-regression)
 
 # Commit message validation (runs on commit-msg hook)
 COMMIT_LINT_ENABLED=true
@@ -116,6 +116,10 @@ DIRTY_CHECK_ENABLED=true        # Warn about uncommitted changes before push
 # README freshness settings (if using readme-check validator)
 README_CHECK_ENABLED=true       # Enable README freshness checking
 README_CHECK_BLOCKING=false     # If true, fails push on stale README
+
+# Visual regression settings (if using visual-regression validator)
+VISUAL_REGRESSION_ENABLED=true    # Enable visual regression checking
+VISUAL_REGRESSION_BLOCKING=false  # Start as warning-only
 
 # Branch protection settings (if using branch-protect validator)
 PROTECTED_BRANCHES=(main master) # Branches that block direct commits
