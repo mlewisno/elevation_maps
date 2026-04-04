@@ -53,7 +53,7 @@ def generate_contours(
     if land_mask_path is not None and land_mask_path.exists():
         with rasterio.open(land_mask_path) as lm_src:
             lm_data = lm_src.read(1)
-            land_mask = ~np.isnan(lm_data)
+            land_mask = (~np.isnan(lm_data)) & (lm_data > 1.0)
             logger.info(
                 "Land mask loaded: %d land pixels (%.1f%%)",
                 land_mask.sum(),
