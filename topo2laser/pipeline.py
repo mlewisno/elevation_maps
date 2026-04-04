@@ -92,6 +92,10 @@ def run(config: PipelineConfig) -> Path:
         center_lon=config.bbox.center_lon,
         target_width_mm=config.width_mm,
         target_height_mm=config.height_mm,
+        bbox_south=config.bbox.south,
+        bbox_west=config.bbox.west,
+        bbox_north=config.bbox.north,
+        bbox_east=config.bbox.east,
     )
 
     # Stage 3b: Smooth, simplify, and filter small polygons

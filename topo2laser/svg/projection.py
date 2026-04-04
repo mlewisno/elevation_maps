@@ -46,20 +46,36 @@ def project_and_scale(
     center_lon: float,
     target_width_mm: float | None = None,
     target_height_mm: float | None = None,
+    bbox_south: float | None = None,
+    bbox_west: float | None = None,
+    bbox_north: float | None = None,
+    bbox_east: float | None = None,
 ) -> tuple[gpd.GeoDataFrame, PhysicalDimensions]:
     """Project to LAEA and scale coordinates from meters to mm.
 
-    If neither target_width_mm nor target_height_mm is given, scales to
-    fit the xTool P2 bed (600mm x 305mm) while preserving aspect ratio.
+    If bbox corners are provided, the clip rectangle is derived from the
+    projected bbox (avoiding LAEA warp artifacts from raster-edge geometry).
+    Otherwise falls back to using total_bounds.
 
     Returns the transformed GeoDataFrame and physical dimensions.
     """
     crs = laea_crs(center_lat, center_lon)
     projected = gdf.to_crs(crs)
 
-    bounds = projected.total_bounds  # minx, miny, maxx, maxy
-    extent_x = bounds[2] - bounds[0]  # meters
-    extent_y = bounds[3] - bounds[1]
+    # Derive extent from projected bbox corners if available
+    if all(v is not None for v in (bbox_south, bbox_west, bbox_north, bbox_east)):
+        bbox_gdf = gpd.GeoDataFrame(
+            geometry=[box(bbox_west, bbox_south, bbox_east, bbox_north)],
+            crs="EPSG:4326",
+        ).to_crs(crs)
+        bbox_bounds = bbox_gdf.total_bounds
+        extent_x = bbox_bounds[2] - bbox_bounds[0]
+        extent_y = bbox_bounds[3] - bbox_bounds[1]
+    else:
+        bbox_bounds = None
+        bounds = projected.total_bounds
+        extent_x = bounds[2] - bounds[0]
+        extent_y = bounds[3] - bounds[1]
 
     if target_width_mm and target_height_mm:
         scale_x = target_width_mm / extent_x
@@ -78,25 +94,35 @@ def project_and_scale(
     scaled = projected.copy()
     scaled["geometry"] = scaled["geometry"].affine_transform([scale, 0, 0, scale, 0, 0])
 
-    # Clip all polygons to the content rectangle to remove projection
-    # artifacts (LAEA warps lat/lon grid into curves at bbox edges)
-    new_bounds = scaled.total_bounds
-    clip_rect = box(new_bounds[0], new_bounds[1], new_bounds[2], new_bounds[3])
+    # Derive clip rectangle from projected bbox (clean rectangle)
+    # rather than from geometry bounds (which include LAEA warp artifacts)
+    if bbox_bounds is not None:
+        cb = [c * scale for c in bbox_bounds]
+    else:
+        cb = list(scaled.total_bounds)
+    clip_rect = box(cb[0], cb[1], cb[2], cb[3])
+
+    # Clip all geometries to the clean rectangle
     scaled["geometry"] = scaled["geometry"].intersection(clip_rect)
     scaled["geometry"] = scaled["geometry"].apply(make_valid)
 
-    # Translate to origin (min corner at 0,0)
-    new_bounds = scaled.total_bounds
-    dx = -new_bounds[0]
-    dy = -new_bounds[1]
+    # Translate so clip rect origin is at (0,0)
+    dx = -cb[0]
+    dy = -cb[1]
     scaled["geometry"] = scaled["geometry"].translate(xoff=dx, yoff=dy)
 
-    final_bounds = scaled.total_bounds
+    width_mm = float(cb[2] - cb[0])
+    height_mm = float(cb[3] - cb[1])
     dims = PhysicalDimensions(
-        width_mm=float(final_bounds[2] - final_bounds[0]),
-        height_mm=float(final_bounds[3] - final_bounds[1]),
+        width_mm=width_mm,
+        height_mm=height_mm,
         scale_factor=scale,
     )
+
+    # Replace base layer (layer 0) with a clean output rectangle
+    base_mask = scaled["layer"] == 0
+    if base_mask.any():
+        scaled.loc[base_mask, "geometry"] = box(0, 0, width_mm, height_mm)
 
     if dims.exceeds_bed:
         logger.warning(
