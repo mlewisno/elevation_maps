@@ -1,8 +1,14 @@
 ---
 title: "Great Lakes Bathymetry Data Source"
-status: Captured
+status: Promoted
 created: 2026-04-03
 source: user
+promoted_to: FEAT-014
+ice_scores:
+  impact: 8
+  confidence: 7
+  ease: 5
+  total: 280
 ---
 
 # IDEA-013: Great Lakes Bathymetry Data Source
@@ -32,3 +38,8 @@ bathymetry data as an additional data source for the Great Lakes:
   Marquette, Traverse City, etc.)
 - Lake Superior has dramatic underwater features (deep trenches, ridges)
 - Extends the tool beyond ocean-only bathymetry
+
+## Prioritization Notes (2026-04-03)
+
+Promoted to FEAT-014. One of the three core use cases for this tool
+(ocean, lake, all-land). Duluth reference case is blocked on this.
