@@ -1,6 +1,6 @@
 ---
 title: "Great Lakes Bathymetry Data Source"
-status: Draft
+status: In Progress
 created: 2026-04-03
 epic: data-sources
 promoted_from: IDEA-013
