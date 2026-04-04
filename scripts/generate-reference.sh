@@ -43,8 +43,18 @@ generate_location() {
         --render-2d
     )
 
+    local water_level land_layers_cfg
+    water_level=$(jq -r '.water_level' "$config")
+    land_layers_cfg=$(jq -r '.land_layers' "$config")
+
     if [[ "$water_layers" != "null" ]]; then
         args+=(--water-layers "$water_layers")
+    fi
+    if [[ "$land_layers_cfg" != "null" ]]; then
+        args+=(--land-layers "$land_layers_cfg")
+    fi
+    if [[ "$water_level" != "null" && "$water_level" != "0" ]]; then
+        args+=(--water-level "$water_level")
     fi
     if [[ "$high_res" == "true" ]]; then
         args+=(--high-res)

@@ -106,6 +106,11 @@ def _parse_mm(value: str | None) -> float | None:
     help="Exact number of land layers.",
 )
 @click.option(
+    "--water-level",
+    default="0",
+    help="Water surface elevation in meters (0 = sea level, 183 = Lake Superior).",
+)
+@click.option(
     "--render/--no-render",
     default=False,
     help="Generate a 3D preview PNG of the stacked layers.",
@@ -140,6 +145,7 @@ def main(
     max_water_layers,
     water_layers,
     land_layers,
+    water_level,
     high_res,
     render,
     render_interactive,
@@ -172,6 +178,7 @@ def main(
         max_water_layers=max_water_layers,
         water_layers=water_layers,
         land_layers=land_layers,
+        water_level=float(water_level),
         include_frame=frame,
         frame_border_mm=_parse_mm(frame_border) or 15.0,
         smooth_iterations=smooth_iterations,
