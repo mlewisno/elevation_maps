@@ -148,11 +148,11 @@ has land elevation rising above sea level AND ocean shelves descending below.
 
 ```bash
 # Minimal — just location and output
-topo2laser --bbox "21.8,-160.3,22.3,-159.2" --output kauai/
+topo2laser --bbox "21.8,-160.5,22.3,-159.2" --output kauai/
 
 # Full options
 topo2laser \
-  --bbox "21.8,-160.3,22.3,-159.2" \
+  --bbox "21.8,-160.5,22.3,-159.2" \
   --material-thickness 3mm \
   --total-height 36mm \
   --width 500mm \

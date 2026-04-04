@@ -25,7 +25,7 @@ defaults:
 
 maps:
   - name: kauai
-    bbox: "21.8,-160.3,22.3,-159.2"
+    bbox: "21.8,-160.5,22.3,-159.2"
     labels: ["Līhu'e", "Waimea", "Hanalei"]
   - name: duluth
     bbox: "46.7,-92.2,46.85,-91.9"
