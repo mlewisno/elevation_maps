@@ -88,10 +88,9 @@ def generate_contours(
                 above = above & land_mask
             mask = above.astype(np.uint8)
 
-        # Flag layers that cover nearly all pixels — projection will
-        # replace them with clean output rectangles to avoid LAEA warp
-        coverage = mask.sum() / total_pixels
-        is_full_coverage = i == 0 or coverage > 0.90
+        # Only the base layer gets replaced with a clean rectangle.
+        # Pre-projection bbox clipping handles edge warp for other layers.
+        is_full_coverage = i == 0
 
         if mask.sum() == 0:
             logger.debug("Layer %d: no pixels in band, skipping", i, threshold)

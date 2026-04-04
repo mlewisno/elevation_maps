@@ -59,10 +59,16 @@ def project_and_scale(
 
     Returns the transformed GeoDataFrame and physical dimensions.
     """
-    # Clip to bbox in original CRS before projecting — prevents raster-edge
-    # geometry from warping under LAEA projection
+    # Clip to bbox in the GeoDataFrame's CRS before projecting — prevents
+    # raster-edge geometry from warping under LAEA projection
     if all(v is not None for v in (bbox_south, bbox_west, bbox_north, bbox_east)):
-        bbox_clip = box(bbox_west, bbox_south, bbox_east, bbox_north)
+        bbox_gdf_clip = gpd.GeoDataFrame(
+            geometry=[box(bbox_west, bbox_south, bbox_east, bbox_north)],
+            crs="EPSG:4326",
+        )
+        if gdf.crs and str(gdf.crs) != "EPSG:4326":
+            bbox_gdf_clip = bbox_gdf_clip.to_crs(gdf.crs)
+        bbox_clip = bbox_gdf_clip.geometry.iloc[0]
         gdf = gdf.copy()
         gdf["geometry"] = gdf["geometry"].intersection(bbox_clip)
         gdf["geometry"] = gdf["geometry"].apply(make_valid)

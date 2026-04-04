@@ -1,0 +1,8 @@
+{
+  "bbox": "36.0,-112.3,36.25,-111.9",
+  "material_thickness": "thin-ply",
+  "layers": 12,
+  "width": "300mm",
+  "high_res": true,
+  "frame": true
+}
