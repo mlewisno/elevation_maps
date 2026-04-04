@@ -108,6 +108,8 @@ if config.get('high_res') and merged.exists():
     dep3 = list(cache_dir.glob('3dep_*.tif'))
     land_mask = dep3[0] if dep3 else None
 
+from topo2laser.alignment import generate_alignment_outlines
+
 gdf = generate_contours(raster, lc, land_mask_path=land_mask)
 gdf, dims = project_and_scale(
     gdf, bbox.center_lat, bbox.center_lon,
@@ -115,7 +117,8 @@ gdf, dims = project_and_scale(
     bbox_south=bbox.south, bbox_west=bbox.west,
     bbox_north=bbox.north, bbox_east=bbox.east,
 )
-render_per_layer(gdf, dims.width_mm, dims.height_mm, Path('$REF_DIR/$location/layers'))
+outlines = generate_alignment_outlines(gdf)
+render_per_layer(gdf, dims.width_mm, dims.height_mm, Path('$REF_DIR/$location/layers'), alignment_outlines=outlines)
 "
 
     # Clean up pipeline output dir

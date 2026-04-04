@@ -196,14 +196,14 @@ def render_per_layer(
     width_mm: float,
     height_mm: float,
     output_dir: Path,
+    alignment_outlines: dict[int, list] | None = None,
     dpi: int = 100,
 ) -> list[Path]:
     """Render each layer as an individual filled PNG.
 
     Each image shows a single layer's shape filled with its color
-    on a white background, labeled with layer info. Useful for
-    verifying the stacking constraint (each layer should be a
-    superset of the one above it).
+    on a white background, labeled with layer info. If alignment_outlines
+    is provided, a dashed blue line shows where the layer above sits.
     """
     import matplotlib.pyplot as plt
     from matplotlib.collections import PatchCollection
@@ -248,6 +248,19 @@ def render_per_layer(
                 patches, facecolor=color, edgecolor=color, linewidth=0.5
             )
             ax.add_collection(pc)
+
+        # Draw alignment outline (dashed blue line showing layer above)
+        if alignment_outlines and layer_idx in alignment_outlines:
+            for line in alignment_outlines[layer_idx]:
+                coords = np.array(line.coords)
+                ax.plot(
+                    coords[:, 0],
+                    coords[:, 1],
+                    color="#0000FF",
+                    linewidth=0.8,
+                    linestyle="--",
+                    alpha=0.7,
+                )
 
         area_pct = row.geometry.area / (width_mm * height_mm) * 100
         ax.set_xlim(0, width_mm)
