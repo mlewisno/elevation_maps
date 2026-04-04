@@ -84,9 +84,10 @@ def generate_contours(
                 above = above & land_mask
             mask = above.astype(np.uint8)
 
-        # Only the base layer gets replaced with a clean rectangle.
-        # Pre-projection bbox clipping handles edge warp for other layers.
-        is_full_coverage = i == 0
+        # Layers covering nearly all pixels get replaced with clean
+        # rectangles in the projection step to avoid edge gaps
+        coverage = mask.sum() / total_pixels
+        is_full_coverage = i == 0 or coverage > 0.98
 
         if mask.sum() == 0:
             logger.debug("Layer %d: no pixels in band, skipping", i, threshold)

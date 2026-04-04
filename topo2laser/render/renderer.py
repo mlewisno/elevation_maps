@@ -128,8 +128,8 @@ def render_2d(
             pc = PatchCollection(
                 patches,
                 facecolor=color,
-                edgecolor=(0, 0, 0, 0.2),
-                linewidth=0.3,
+                edgecolor=color,
+                linewidth=0.5,
             )
             ax.add_collection(pc)
 
@@ -146,9 +146,11 @@ def render_2d(
     ax.set_ylim(0, height_mm)
     ax.set_aspect("equal")
     ax.margins(0)
-    # White background so sub-pixel polygon rendering gaps don't show
-    # a contrasting color (the physical frame covers edges anyway)
-    ax.set_facecolor("white")
+    # Base layer background so sub-pixel polygon rendering gaps blend
+    base_row = gdf.sort_values("layer").iloc[0]
+    base_type = base_row["type"]
+    base_pos = _layer_position(base_row["layer"], base_type, water_layers, land_layers)
+    ax.set_facecolor(_layer_color(base_type, base_pos))
     ax.set_xlabel("mm")
     ax.set_ylabel("mm")
     ax.set_title("Topo Map — 2D Layer Preview")

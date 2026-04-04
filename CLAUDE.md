@@ -59,6 +59,13 @@ uv run black topo2laser/ tests/ && uv run ruff check --fix topo2laser/ tests/
 ```
 
 ## Project-Specific Rules
+- **Physical stacking constraint**: This tool produces layers for a physical
+  3D laser-cut map. Every lower layer MUST be strictly larger than (or equal
+  to) the layer above it. Layer 0 is the full rectangle base. Each subsequent
+  layer uses a cumulative mask (everything >= threshold), never a band/ring.
+  When stacked, higher layers sit on top of lower ones — if a lower layer
+  doesn't extend under the layer above it, the physical map has unsupported
+  pieces. Always validate that layer N's area >= layer N+1's area.
 - All geo coordinates use (lat, lon) order in user-facing APIs, but internal
   processing may use (lon, lat) per geo library conventions. Document which
   convention each function uses.
