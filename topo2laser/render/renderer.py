@@ -357,8 +357,9 @@ def render_3d(
     # Set camera angle for a nice isometric-ish view
     ax.view_init(elev=35, azim=-60)
 
-    # Equal aspect ratio for X and Y
-    ax.set_box_aspect([width_mm, height_mm, total_z * 3])
+    # Set aspect ratio — ensure Z is visible relative to X/Y
+    z_aspect = max(total_z * 3, max(width_mm, height_mm) * 0.15)
+    ax.set_box_aspect([width_mm, height_mm, z_aspect])
 
     plt.tight_layout()
 
