@@ -41,6 +41,7 @@ generate_location() {
         --layers "$layers"
         --width "$width"
         --render-2d
+        --render
     )
 
     local water_level land_layers_cfg
@@ -68,6 +69,7 @@ generate_location() {
 
     # Copy renders to reference directory
     cp "$REF_DIR/$location/output/render_2d.png" "$REF_DIR/$location/render_2d.png"
+    cp "$REF_DIR/$location/output/render.png" "$REF_DIR/$location/render_3d.png" 2>/dev/null || true
 
     # Copy per-layer SVGs
     mkdir -p "$REF_DIR/$location/layers"
