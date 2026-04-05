@@ -98,12 +98,6 @@ def render_2d(
     land_layers = gdf[gdf["type"] != "water"]["layer"].tolist()
     legend_entries = []
 
-    # Set axes background to base layer color so corner gaps are invisible
-    base_row = gdf.sort_values("layer").iloc[0]
-    base_type = base_row["type"]
-    base_pos = _layer_position(base_row["layer"], base_type, water_layers, land_layers)
-    ax.set_facecolor(_layer_color(base_type, base_pos))
-
     # Draw layers bottom-to-top (sorted by layer index)
     for _, row in gdf.sort_values("layer").iterrows():
         layer_idx = row["layer"]
@@ -134,8 +128,8 @@ def render_2d(
             pc = PatchCollection(
                 patches,
                 facecolor=color,
-                edgecolor=(0, 0, 0, 0.2),
-                linewidth=0.3,
+                edgecolor=color,
+                linewidth=0.5,
             )
             ax.add_collection(pc)
 
@@ -151,6 +145,12 @@ def render_2d(
     ax.set_xlim(0, width_mm)
     ax.set_ylim(0, height_mm)
     ax.set_aspect("equal")
+    ax.margins(0)
+    # Base layer background so sub-pixel polygon rendering gaps blend
+    base_row = gdf.sort_values("layer").iloc[0]
+    base_type = base_row["type"]
+    base_pos = _layer_position(base_row["layer"], base_type, water_layers, land_layers)
+    ax.set_facecolor(_layer_color(base_type, base_pos))
     ax.set_xlabel("mm")
     ax.set_ylabel("mm")
     ax.set_title("Topo Map — 2D Layer Preview")
@@ -189,6 +189,98 @@ def render_2d(
     plt.close(fig)
 
     return output_path
+
+
+def render_per_layer(
+    gdf: gpd.GeoDataFrame,
+    width_mm: float,
+    height_mm: float,
+    output_dir: Path,
+    alignment_outlines: dict[int, list] | None = None,
+    dpi: int = 100,
+) -> list[Path]:
+    """Render each layer as an individual filled PNG.
+
+    Each image shows a single layer's shape filled with its color
+    on a white background, labeled with layer info. If alignment_outlines
+    is provided, a dashed blue line shows where the layer above sits.
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.collections import PatchCollection
+    from matplotlib.patches import PathPatch
+    from matplotlib.path import Path as MplPath
+
+    water_layers = gdf[gdf["type"] == "water"]["layer"].tolist()
+    land_layers = gdf[gdf["type"] != "water"]["layer"].tolist()
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    paths = []
+
+    for _, row in gdf.sort_values("layer").iterrows():
+        layer_idx = row["layer"]
+        layer_type = row["type"]
+        position = _layer_position(layer_idx, layer_type, water_layers, land_layers)
+        color = _layer_color(layer_type, position)
+
+        aspect = height_mm / width_mm
+        fig, ax = plt.subplots(figsize=(6, 6 * aspect))
+
+        polygons = _collect_polygons(row.geometry)
+        patches = []
+        for poly in polygons:
+            if poly.is_empty or poly.area < 1.0:
+                continue
+            codes = []
+            verts = []
+            for ring in [poly.exterior, *poly.interiors]:
+                coords = np.array(ring.coords)
+                ring_codes = (
+                    [MplPath.MOVETO]
+                    + [MplPath.LINETO] * (len(coords) - 2)
+                    + [MplPath.CLOSEPOLY]
+                )
+                codes.extend(ring_codes)
+                verts.extend(coords.tolist())
+            patches.append(PathPatch(MplPath(verts, codes)))
+
+        if patches:
+            pc = PatchCollection(
+                patches, facecolor=color, edgecolor=color, linewidth=0.5
+            )
+            ax.add_collection(pc)
+
+        # Draw alignment outline (dashed blue line showing layer above)
+        if alignment_outlines and layer_idx in alignment_outlines:
+            for line in alignment_outlines[layer_idx]:
+                coords = np.array(line.coords)
+                ax.plot(
+                    coords[:, 0],
+                    coords[:, 1],
+                    color="#0000FF",
+                    linewidth=0.8,
+                    linestyle="--",
+                    alpha=0.7,
+                )
+
+        area_pct = row.geometry.area / (width_mm * height_mm) * 100
+        ax.set_xlim(0, width_mm)
+        ax.set_ylim(0, height_mm)
+        ax.set_aspect("equal")
+        ax.margins(0)
+        ax.set_title(
+            f"L{layer_idx} ({layer_type}): "
+            f"{row['elevation_min']:.0f}m–{row['elevation_max']:.0f}m "
+            f"({area_pct:.1f}%)",
+            fontsize=10,
+        )
+
+        out_path = output_dir / f"layer-{layer_idx:02d}-{layer_type}.png"
+        fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
+        plt.close(fig)
+        paths.append(out_path)
+
+    logger.info("Per-layer renders saved to %s", output_dir)
+    return paths
 
 
 def render_3d(

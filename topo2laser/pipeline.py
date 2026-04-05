@@ -40,6 +40,7 @@ class PipelineConfig:
     max_water_layers: int = 4
     water_layers: int | None = None
     land_layers: int | None = None
+    water_level: float = 0.0
     render: bool = False
     render_interactive: bool = False
     render_2d: bool = False
@@ -79,6 +80,7 @@ def run(config: PipelineConfig) -> Path:
         max_water_layers=config.max_water_layers,
         water_layers=config.water_layers,
         land_layers=config.land_layers,
+        water_level=config.water_level,
     )
     logger.info(
         "Layer config: %d layers, %.1fmm total height",

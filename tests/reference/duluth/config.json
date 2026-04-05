@@ -1,7 +1,9 @@
 {
   "bbox": "46.58,-92.35,46.95,-91.75",
   "material_thickness": "thin-ply",
-  "layers": 8,
+  "layers": 10,
+  "water_layers": 4,
+  "water_level": 183,
   "width": "300mm",
   "high_res": false,
   "frame": true

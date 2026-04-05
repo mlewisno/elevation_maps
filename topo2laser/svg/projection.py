@@ -59,10 +59,16 @@ def project_and_scale(
 
     Returns the transformed GeoDataFrame and physical dimensions.
     """
-    # Clip to bbox in original CRS before projecting — prevents raster-edge
-    # geometry from warping under LAEA projection
+    # Clip to bbox in the GeoDataFrame's CRS before projecting — prevents
+    # raster-edge geometry from warping under LAEA projection
     if all(v is not None for v in (bbox_south, bbox_west, bbox_north, bbox_east)):
-        bbox_clip = box(bbox_west, bbox_south, bbox_east, bbox_north)
+        bbox_gdf_clip = gpd.GeoDataFrame(
+            geometry=[box(bbox_west, bbox_south, bbox_east, bbox_north)],
+            crs="EPSG:4326",
+        )
+        if gdf.crs and str(gdf.crs) != "EPSG:4326":
+            bbox_gdf_clip = bbox_gdf_clip.to_crs(gdf.crs)
+        bbox_clip = bbox_gdf_clip.geometry.iloc[0]
         gdf = gdf.copy()
         gdf["geometry"] = gdf["geometry"].intersection(bbox_clip)
         gdf["geometry"] = gdf["geometry"].apply(make_valid)
@@ -140,6 +146,26 @@ def project_and_scale(
     if "full_coverage" in scaled.columns:
         full_mask = scaled["full_coverage"] == True  # noqa: E712
         scaled.loc[full_mask, "geometry"] = output_rect
+
+    # Snap near-edge layers to the output rectangle — raster pixel
+    # alignment causes a ~1mm gap between contour edge and output border.
+    # Buffer the geometry outward then clip to the output rect.
+    snap_tolerance = 2.0  # mm
+    for idx, row in scaled.iterrows():
+        geom = row["geometry"]
+        if geom.is_empty or row.get("full_coverage", False):
+            continue
+        b = geom.bounds
+        near_edge = (
+            b[0] < snap_tolerance
+            or b[1] < snap_tolerance
+            or (width_mm - b[2]) < snap_tolerance
+            or (height_mm - b[3]) < snap_tolerance
+        )
+        if near_edge:
+            scaled.at[idx, "geometry"] = make_valid(
+                geom.buffer(snap_tolerance).intersection(output_rect)
+            )
 
     if dims.exceeds_bed:
         logger.warning(

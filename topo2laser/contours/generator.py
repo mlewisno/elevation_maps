@@ -53,7 +53,8 @@ def generate_contours(
     if land_mask_path is not None and land_mask_path.exists():
         with rasterio.open(land_mask_path) as lm_src:
             lm_data = lm_src.read(1)
-            land_mask = (~np.isnan(lm_data)) & (lm_data > 1.0)
+            land_threshold = max(1.0, layer_config.water_level + 1.0)
+            land_mask = (~np.isnan(lm_data)) & (lm_data > land_threshold)
             logger.info(
                 "Land mask loaded: %d land pixels (%.1f%%)",
                 land_mask.sum(),
@@ -73,25 +74,20 @@ def generate_contours(
         if i == 0:
             # Bottom layer: full rectangle (base piece)
             mask = np.ones_like(elevation, dtype=np.uint8)
-        elif info["type"] == "water" and i < layer_config.layer_count - 1:
-            # Water layers: band shape (area between this and next threshold)
-            # Shows the ocean floor contour visible from above
-            above_this = elevation >= threshold
-            next_threshold = breakpoints[i + 1]
-            above_next = elevation >= next_threshold
-            mask = (above_this & ~above_next).astype(np.uint8)
         else:
-            # Land layers: cumulative (everything >= threshold)
-            # Shows the island/terrain shape at this elevation
+            # All layers use cumulative shape (everything >= threshold).
+            # Each physical piece is cut as "everything at or above this
+            # elevation." When stacked, higher layers cover lower ones,
+            # producing the visible contour bands naturally.
             above = elevation >= threshold
-            if land_mask is not None:
+            if info["type"] != "water" and land_mask is not None:
                 above = above & land_mask
             mask = above.astype(np.uint8)
 
-        # Flag layers that cover nearly all pixels — projection will
-        # replace them with clean output rectangles to avoid LAEA warp
+        # Layers covering nearly all pixels get replaced with clean
+        # rectangles in the projection step to avoid edge gaps
         coverage = mask.sum() / total_pixels
-        is_full_coverage = i == 0 or coverage > 0.90
+        is_full_coverage = i == 0 or coverage > 0.98
 
         if mask.sum() == 0:
             logger.debug("Layer %d: no pixels in band, skipping", i, threshold)
